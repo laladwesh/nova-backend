@@ -35,17 +35,35 @@ async function authenticate(req, res, next) {
 
     // payload should contain at least { userId, iat, exp }
     const user = await User.findById(payload.userId).select("-password");
-    const isMatch = user.schoolId.equals(req.body.schoolId);
-    if( !isMatch ) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Unauthorized access to this school." });
-    };
+    
     console.log("Authenticated User:", user);
     if (!user) {
       return res
         .status(401)
         .json({ success: false, message: "User not found." });
+    }
+    
+    // Check for schoolId in either body or query parameters
+    const schoolIdToCheck = req.query.schoolId;
+    
+    // Only perform the school check if a schoolId was provided and user has schoolId
+    if (schoolIdToCheck && user.schoolId) {
+      try {
+        // Using toString() for safer comparison
+        const userSchoolId = user.schoolId.toString();
+        const requestSchoolId = schoolIdToCheck.toString();
+        
+        if (userSchoolId !== requestSchoolId) {
+          return res
+            .status(401)
+            .json({ success: false, message: "Unauthorized access to this school." });
+        }
+      } catch (err) {
+        console.error("Error comparing school IDs:", err);
+        return res
+          .status(500)
+          .json({ success: false, message: "Error validating school access." });
+      }
     }
 
     // Attach minimal user info to req.user

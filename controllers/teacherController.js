@@ -25,18 +25,9 @@ module.exports = {
   // GET /teachers
   listTeachers: async (req, res) => {
     try {
-      const { schoolId } = req.body;
-      
-      if (!schoolId) {
-        return res.status(400).json({
-          success: false,
-          message: "schoolId is required.",
-        });
-      }
-      
       // Optionally implement pagination:
       // const { page = 1, limit = 20 } = req.query;
-      const teachers = await Teacher.find({ schoolId })
+      const teachers = await Teacher.find()
         .sort({ name: 1 }) // alphabetical
         .select("-__v");
 
@@ -65,7 +56,7 @@ module.exports = {
         roles = [],
         teachingSubs = [],
         classes = [],
-        schoolId,
+        schoolId, // Optional, if needed for multi-school setup
       } = req.body;
 
       // Validate required fields
@@ -91,12 +82,11 @@ module.exports = {
       if (classes.length > 0) {
         const validClassCount = await Class.countDocuments({
           _id: { $in: classes.map((id) => mongoose.Types.ObjectId(id)) },
-          schoolId, // Only count classes that belong to this school
         });
         if (validClassCount !== classes.length) {
           return res.status(400).json({
             success: false,
-            message: "One or more class IDs are invalid or don't belong to this school.",
+            message: "One or more class IDs are invalid.",
           });
         }
       }
@@ -112,7 +102,7 @@ module.exports = {
         roles,
         teachingSubs,
         classes,
-        schoolId, // Include schoolId in the created document
+        schoolId, // Optional, if needed for multi-school setup
       });
 
       // Populate classes before returning
@@ -174,6 +164,7 @@ module.exports = {
         roles,
         teachingSubs,
         classes,
+        schoolId,
       } = req.body;
 
       const updates = {};
