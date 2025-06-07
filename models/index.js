@@ -55,7 +55,7 @@ const ClassSchema = new Schema(
     teachers: [{ type: Schema.Types.ObjectId, ref: "Teacher" }], // array of teacher IDs
     subjects: [{ type: String, required: true }], // e.g. ["Math","Physics"]
     students: [{ type: Schema.Types.ObjectId, ref: "Student" }], // array of student IDs
-
+schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     analytics: {
       attendancePct: { type: Number, min: 0, max: 100, default: 0 },
       avgGrade: { type: Number, default: 0 },
@@ -95,10 +95,12 @@ const ParentSchema = new Schema(
     name: { type: String, required: true },
     phone: { type: String },
     email: { type: String },
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
+    students: [{ type: Schema.Types.ObjectId, ref: "Student" }], // array of student IDs
   },
   { _id: false }
 );
-
+const Parent = model("Parent", ParentSchema);
 // ────────────────────────────────────────────────────────────────────────────────
 // 4. STUDENT
 // ────────────────────────────────────────────────────────────────────────────────
@@ -123,7 +125,7 @@ const StudentSchema = new Schema(
     studentId: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
-
+schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     dob: { type: Date },
     gender: {
       type: String,
@@ -498,6 +500,7 @@ module.exports = {
   School,
   // Domain models:
   Class,
+  Parent,
   Teacher,
   Student,
   Event,

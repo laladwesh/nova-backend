@@ -1,4 +1,3 @@
-// models/School.js
 const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 
@@ -8,18 +7,27 @@ const SchoolSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-    },
-    // (Optional) If you still want a “token” for some other purpose,
-    // but we’ll not enforce it in headers for signup. You may omit it
-    // entirely if you don’t need tokens.
-    token: {
-      type: String,
       unique: true,
-      trim: true,
+      index: true,
     },
-    // You can add additional fields here, e.g. address, contact, etc.
+    teachers: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Teacher" }],
+      default: [],
+    },
+    students: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Student" }],
+      default: [],
+    },
+    classes: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Class" }],
+      default: [],
+    },
+    parents: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Parent" }],
+      default: [],
+    },
     address: { type: String, default: "" },
-    phone: { type: String, default: "" },
+    phone:   { type: String, default: "" },
   },
   { timestamps: true }
 );

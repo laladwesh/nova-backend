@@ -28,6 +28,8 @@ const {
   School,
   Student,
   Class,
+  Teacher,
+  Parent,
 } = require("../models");
 const sendEmail = require("../utils/sendEmail"); // implement a sendEmail utility with nodemailer or similar
 
@@ -134,6 +136,7 @@ exports.signup = async (req, res) => {
         name: name.trim(),
         classId: classId,
         email: email.toLowerCase().trim(),
+        schoolId: schoolRecord._id,
         // any other StudentSchema defaults will apply
       });
 
@@ -141,6 +144,40 @@ exports.signup = async (req, res) => {
       await Class.findByIdAndUpdate(
         classId,
         { $push: { students: studentDoc._id } },
+        { new: true }
+      );
+    }
+    if (role === "teacher") {
+      // 7.a) Create the Teacher document
+      const teacherDoc = await Teacher.create({
+        teacherId: crypto.randomBytes(4).toString("hex"), // e.g. “9f1a2b3c”
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        schoolId: schoolRecord._id,
+        // any other TeacherSchema defaults will apply
+      });
+      // 7.b) Push into School.teachers
+      await
+  School.findByIdAndUpdate(
+        schoolRecord._id,
+        { $push: { teachers: teacherDoc._id } },
+        { new: true }
+      );
+    }
+
+    if (role === "parent") {
+      // 7.a) Create the Parent document
+      const parentDoc = await Parent.create({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        schoolId: schoolRecord._id,
+        // any other ParentSchema defaults will apply
+      });
+      // 7.b) Push into School.parents
+      await
+      School.findByIdAndUpdate(
+        schoolRecord._id,
+        { $push: { parents: parentDoc._id } },
         { new: true }
       );
     }
