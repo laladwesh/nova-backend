@@ -35,6 +35,12 @@ async function authenticate(req, res, next) {
 
     // payload should contain at least { userId, iat, exp }
     const user = await User.findById(payload.userId).select("-password");
+    const isMatch = user.schoolId.equals(req.body.schoolId);
+    if( !isMatch ) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Unauthorized access to this school." });
+    };
     console.log("Authenticated User:", user);
     if (!user) {
       return res
