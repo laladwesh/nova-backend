@@ -45,16 +45,18 @@ module.exports = {
         grade,
         section,
         year,
+        schoolId, // Extract schoolId from request
         teachers = [],
         subjects = [],
         students = [],
+        analytics = { attendancePct: 0, avgGrade: 0, passPct: 0 }
       } = req.body;
 
       // Required fields
-      if (!name || !grade || !section || !year) {
+      if (!name || !grade || !section || !year || !schoolId) {
         return res.status(400).json({
           success: false,
-          message: "name, grade, section, and year are required.",
+          message: "name, grade, section, year, and schoolId are required.",
         });
       }
 
@@ -71,15 +73,17 @@ module.exports = {
         }
       }
 
-      // Create the class document
+      // Create the class document - include schoolId here
       const newClass = await Class.create({
         name,
         grade,
         section,
         year,
+        schoolId, // Add this to match your model requirements
         teachers,
         subjects,
         students,
+        analytics // Include analytics if your model supports it
       });
 
       // Populate before returning

@@ -73,13 +73,14 @@ module.exports = {
         email,
         feePaid = false,
         parents = [],
+        schoolId,
       } = req.body;
 
       // Validate required fields
-      if (!studentId || !name || !classId) {
+      if (!studentId || !name || !classId || !schoolId) {
         return res.status(400).json({
           success: false,
-          message: "studentId, name, and classId are required.",
+          message: "studentId, name, classId, and schoolId are required.",
         });
       }
 
@@ -100,11 +101,11 @@ module.exports = {
           .status(400)
           .json({ success: false, message: "Invalid classId." });
       }
-      const classExists = await Class.exists({ _id: classId });
+      const classExists = await Class.exists({ _id: classId, schoolId });
       if (!classExists) {
         return res
           .status(404)
-          .json({ success: false, message: "Class not found." });
+          .json({ success: false, message: "Class not found or doesn't belong to this school." });
       }
 
       // Create student document
@@ -119,6 +120,7 @@ module.exports = {
         email: email?.toLowerCase(),
         feePaid,
         parents,
+        schoolId, // Include schoolId in the created document
       });
 
       // Populate class field before returning
