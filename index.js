@@ -3,8 +3,10 @@
 require("dotenv").config();
 const express = require("express");
 const connectDb = require("./utils/connectDb");
+const cors = require("cors");
 
 const app = express();
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // body parser, etc.
 
 // Import all routers

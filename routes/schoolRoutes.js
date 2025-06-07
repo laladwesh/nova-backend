@@ -7,7 +7,7 @@ const { authenticate, isAdmin } = require("../middleware/authMiddleware");
 // ← You’ll only need protect/authorize if you want to restrict who can create/list schools.
 // For instance, maybe only a super‐admin can create a School.
 
-router.get("/", authenticate, isAdmin, schoolController.listSchools);
+router.get("/", schoolController.listSchools);
 
 router.post(
   "/",
