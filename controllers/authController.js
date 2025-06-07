@@ -193,8 +193,10 @@ exports.login = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Email and password are required." });
     }
-
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+console.log('Login attempt for email:', email.toLowerCase().trim());
+    const user = await User.findOne({ email: email });
+    console.log('User found:', user);
+    // Check if user exists
     if (!user) {
       return res
         .status(401)
@@ -223,6 +225,7 @@ exports.login = async (req, res) => {
           name: user.name,
           email: user.email,
           role: user.role,
+          schoolId: user.schoolId,
         },
         tokens: {
           accessToken,
