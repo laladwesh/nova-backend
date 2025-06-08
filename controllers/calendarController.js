@@ -47,18 +47,27 @@ module.exports = {
   // POST /calendar
   createCalendarItem: async (req, res) => {
     try {
-      const { year, type, name, date, time, subjects } = req.body;
+      const { year, type, name, date, time, subjects, schoolId } = req.body;
 
-      if (!year || !type || !name || !date) {
+      if (!year || !type || !name || !date || !schoolId) {
         return res.status(400).json({
           success: false,
-          message: "year, type, name, and date are required.",
+          message: "year, type, name, date, and schoolId are required.",
         });
       }
+      
+      // Validate schoolId format
+      if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid schoolId format.",
+        });
+      }
+      
       const parsedYear = parseInt(year, 10);
       const calendar = await AcademicCalendar.findOneAndUpdate(
-        { year: parsedYear },
-        { $setOnInsert: { year: parsedYear } },
+        { year: parsedYear, schoolId },
+        { $setOnInsert: { year: parsedYear, schoolId } },
         { new: true, upsert: true, setDefaultsOnInsert: true }
       );
 

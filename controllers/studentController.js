@@ -108,6 +108,12 @@ module.exports = {
           .json({ success: false, message: "Class not found or doesn't belong to this school." });
       }
 
+      // Add schoolId to each parent object
+      const parentsWithSchoolId = parents.map(parent => ({
+        ...parent,
+        schoolId
+      }));
+
       // Create student document
       const student = await Student.create({
         studentId,
@@ -119,8 +125,8 @@ module.exports = {
         phone,
         email: email?.toLowerCase(),
         feePaid,
-        parents,
-        schoolId, // Include schoolId in the created document
+        parents: parentsWithSchoolId,
+        schoolId,
       });
 
       // Populate class field before returning

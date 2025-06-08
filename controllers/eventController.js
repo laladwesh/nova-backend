@@ -54,12 +54,12 @@ module.exports = {
   // POST /events
   createEvent: async (req, res) => {
     try {
-      const { name, description, date, time, venue } = req.body;
+      const { name, description, date, time, venue, schoolId } = req.body;
 
-      if (!name || !date) {
+      if (!name || !date || !schoolId) {
         return res.status(400).json({
           success: false,
-          message: "Event name and date are required.",
+          message: "Event name, date, and schoolId are required.",
         });
       }
 
@@ -69,6 +69,7 @@ module.exports = {
         date: new Date(date),
         time: time || null,
         venue: venue || "",
+        schoolId,
       });
 
       return res.status(201).json({

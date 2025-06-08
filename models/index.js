@@ -77,6 +77,8 @@ const TeacherSchema = new Schema(
     phone: { type: String },
     dateJoined: { type: Date, default: Date.now },
     salaryPaid: { type: Boolean, default: false },
+    //adding schoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
 
     roles: [{ type: String, trim: true }], // e.g. ["ClassTeacher","LabInstructor"]
     teachingSubs: [{ type: String, required: true }], // e.g. ["Math","Physics"]
@@ -125,6 +127,7 @@ const StudentSchema = new Schema(
     studentId: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
+
 schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     dob: { type: Date },
     gender: {
@@ -152,6 +155,8 @@ const EventSchema = new Schema(
     name: { type: String, required: true },
     description: { type: String },
     date: { type: Date, required: true },
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     time: { type: String }, // e.g. “14:30”
     venue: { type: String },
   },
@@ -170,6 +175,8 @@ const NotificationSchema = new Schema(
       required: true,
     },
     message: { type: String, required: true },
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "Student" }, // if type=Student
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher" }, // if type=Teacher
     audience: {
@@ -219,6 +226,8 @@ const AcademicCalendarSchema = new Schema(
     holidays: { type: [HolidaySchema], default: [] },
     examSchedule: { type: [ExamSchema], default: [] },
     fixedEvents: { type: [FixedEventSchema], default: [] },
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
   },
   { timestamps: true }
 );
@@ -271,7 +280,9 @@ const Payment = model("Payment", PaymentSchema);
 // 9. ASSIGNMENT & SUBMISSION
 // ────────────────────────────────────────────────────────────────────────────────
 const AssignmentSchema = new Schema(
-  {
+  { 
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
     subject: { type: String, required: true },
@@ -319,7 +330,9 @@ const AttendanceEntrySchema = new Schema(
 );
 
 const AttendanceRecordSchema = new Schema(
-  {
+  { 
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
     subject: { type: String, required: true },
     date: { type: Date, required: true },
@@ -334,6 +347,8 @@ const AttendanceRecord = model("AttendanceRecord", AttendanceRecordSchema);
 // ────────────────────────────────────────────────────────────────────────────────
 const GradeSchema = new Schema(
   {
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
     subject: { type: String, required: true },
     examType: {
@@ -378,6 +393,8 @@ const LessonGoalSchema = new Schema(
 
 const LessonPlanSchema = new Schema(
   {
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
     weekOf: { type: Date, required: true },
@@ -393,6 +410,8 @@ const LessonPlan = model("LessonPlan", LessonPlanSchema);
 // ────────────────────────────────────────────────────────────────────────────────
 const FormSchema = new Schema(
   {
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
     type: {
       type: String,
@@ -418,6 +437,8 @@ const Form = model("Form", FormSchema);
 // ────────────────────────────────────────────────────────────────────────────────
 const ResourceSchema = new Schema(
   {
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     uploadedBy: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
     subject: { type: String, required: true },
@@ -449,6 +470,7 @@ const MessageSchema = new Schema(
       ref: "Conversation",
       required: true,
     },
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     fromUserId: { type: Schema.Types.ObjectId, required: true },
     toUserId: { type: Schema.Types.ObjectId, required: true },
     body: { type: String, required: true },
@@ -475,6 +497,8 @@ const PTMSlot = model("PTMSlot", PTMSlotSchema);
 
 const PTMBookingSchema = new Schema(
   {
+    //adding SchoolId
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true }, 
     slotId: { type: Schema.Types.ObjectId, ref: "PTMSlot", required: true },
     parentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },

@@ -56,7 +56,7 @@ module.exports = {
         roles = [],
         teachingSubs = [],
         classes = [],
-        schoolId, // Optional, if needed for multi-school setup
+        schoolId, // School ID is required
       } = req.body;
 
       // Validate required fields
@@ -66,7 +66,7 @@ module.exports = {
           message: "teacherId, name, email, and schoolId are required.",
         });
       }
-
+      
       // Check for unique teacherId and email
       const existing = await Teacher.findOne({
         $or: [{ teacherId }, { email: email.toLowerCase() }],
@@ -81,7 +81,7 @@ module.exports = {
       // If classes array provided, ensure they are valid ObjectId strings
       if (classes.length > 0) {
         const validClassCount = await Class.countDocuments({
-          _id: { $in: classes.map((id) => mongoose.Types.ObjectId(id)) },
+          _id: { $in: classes.map((id) => new mongoose.Types.ObjectId(id)) },
         });
         if (validClassCount !== classes.length) {
           return res.status(400).json({
@@ -91,8 +91,8 @@ module.exports = {
         }
       }
 
-      // Create teacher document
-      const teacher = await Teacher.create({
+      // Create teacher document with explicit schoolId
+      const teacher = new Teacher({
         teacherId,
         name,
         email: email.toLowerCase(),
@@ -102,25 +102,23 @@ module.exports = {
         roles,
         teachingSubs,
         classes,
-        schoolId, // Optional, if needed for multi-school setup
+        schoolId, // Add schoolId directly to the document
       });
 
-      // Populate classes before returning
-      const populatedTeacher = await Teacher.findById(teacher._id).populate(
-        "classes",
-        "name grade section year"
-      );
-
+      await teacher.save();
+      
+      // Return the complete teacher object including schoolId
       return res.status(201).json({
         success: true,
         message: "Teacher created successfully.",
-        data: populatedTeacher,
+        data: teacher,
       });
     } catch (err) {
       console.error("teacherController.createTeacher error:", err);
+      console.error("Error stack:", err.stack);
       return res
         .status(500)
-        .json({ success: false, message: "Internal server error." });
+        .json({ success: false, message: "Internal server error.", error: err.message });
     }
   },
 
@@ -174,6 +172,8 @@ module.exports = {
       if (teachingSubs) updates.teachingSubs = teachingSubs;
       if (roles) updates.roles = roles;
       if (dateJoined) updates.dateJoined = new Date(dateJoined);
+      // Add schoolId to updates if provided
+      if (schoolId) updates.schoolId = new mongoose.Types.ObjectId(schoolId);
 
       // If email is being updated, check uniqueness
       if (email) {
