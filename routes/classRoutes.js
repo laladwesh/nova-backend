@@ -46,14 +46,14 @@ router.get(
 );
 
 /**
- * 7. PUT '/:classId/teachers' – assign teachers to a class
+ * 7. PUT '/:classId/teachers' – assign teachers to a class (sync both sides)
  *    – Only Admin can modify a class’s teacher assignments.
- */
+*/
 router.put(
   "/:classId/teachers",
   authenticate,
   isAdmin,
-  classController.setClassTeachers
+  classController.assignTeachersToClass
 );
 
 /**
@@ -88,14 +88,14 @@ router.get(
 );
 
 /**
- * 11. PUT '/:classId/students' – assign students to a class
+ * 11. PUT '/:classId/students' – assign students to a class (sync both sides)
  *     – Only Admin can modify a class's student assignments.
  */
 router.put(
   "/:classId/students",
   authenticate,
   isAdmin,
-  classController.setClassStudents
+  classController.assignStudentsToClass
 );
 
 module.exports = router;
