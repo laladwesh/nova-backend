@@ -353,4 +353,70 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
+
+  // GET /classes/:classId/students
+  getClassStudents: async (req, res) => {
+    try {
+      const { classId } = req.params;
+      const classDoc = await Class.findById(classId).populate(
+        "students",
+        "name studentId"
+      );
+
+      if (!classDoc) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: classDoc.students,
+      });
+    } catch (err) {
+      console.error("classController.getClassStudents error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  },
+
+  // PUT /classes/:classId/students
+  setClassStudents: async (req, res) => {
+    try {
+      const { classId } = req.params;
+      const { studentIds } = req.body;
+
+      if (!Array.isArray(studentIds)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "studentIds must be an array." });
+      }
+
+      // Optional: Add validation for student IDs here if needed
+
+      const updatedClass = await Class.findByIdAndUpdate(
+        classId,
+        { $set: { students: studentIds } },
+        { new: true, runValidators: true, context: "query" }
+      ).populate("students", "name studentId");
+
+      if (!updatedClass) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Students updated successfully.",
+        data: updatedClass.students,
+      });
+    } catch (err) {
+      console.error("classController.setClassStudents error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  },
 };

@@ -77,4 +77,25 @@ router.put(
   classController.setClassSubjects
 );
 
+/**
+ * 10. GET '/:classId/students' – list students assigned to a class
+ *     – Any authenticated user can view which students are assigned.
+ */
+router.get(
+  "/:classId/students",
+  authenticate,
+  classController.getClassStudents
+);
+
+/**
+ * 11. PUT '/:classId/students' – assign students to a class
+ *     – Only Admin can modify a class's student assignments.
+ */
+router.put(
+  "/:classId/students",
+  authenticate,
+  isAdmin,
+  classController.setClassStudents
+);
+
 module.exports = router;
