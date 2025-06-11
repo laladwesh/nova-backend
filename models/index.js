@@ -55,7 +55,7 @@ const ClassSchema = new Schema(
     teachers: [{ type: Schema.Types.ObjectId, ref: "Teacher" }], // array of teacher IDs
     subjects: [{ type: String, required: true }], // e.g. ["Math","Physics"]
     students: [{ type: Schema.Types.ObjectId, ref: "Student" }], // array of student IDs
-schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     analytics: {
       attendancePct: { type: Number, min: 0, max: 100, default: 0 },
       avgGrade: { type: Number, default: 0 },
@@ -128,7 +128,7 @@ const StudentSchema = new Schema(
     name: { type: String, required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
 
-schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     dob: { type: Date },
     gender: {
       type: String,
@@ -280,7 +280,7 @@ const Payment = model("Payment", PaymentSchema);
 // 9. ASSIGNMENT & SUBMISSION
 // ────────────────────────────────────────────────────────────────────────────────
 const AssignmentSchema = new Schema(
-  { 
+  {
     //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
@@ -330,7 +330,7 @@ const AttendanceEntrySchema = new Schema(
 );
 
 const AttendanceRecordSchema = new Schema(
-  { 
+  {
     //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
@@ -498,7 +498,7 @@ const PTMSlot = model("PTMSlot", PTMSlotSchema);
 const PTMBookingSchema = new Schema(
   {
     //adding SchoolId
-    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true }, 
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     slotId: { type: Schema.Types.ObjectId, ref: "PTMSlot", required: true },
     parentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },

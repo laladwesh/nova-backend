@@ -241,62 +241,60 @@ module.exports = {
   },
 
   // PUT /classes/:classId/teachers
-  assignTeachersToClass: async (req, res, next) => {
-  const { classId }   = req.params;
-  const { teacherIds } = req.body;            // e.g. [ "...", "..." ]
+assignTeachersToClass: async (req, res, next) => {
+    const { classId }    = req.params;
+    const { teacherIds } = req.body; // expecting an array of ObjectId strings
 
-  if (!Array.isArray(teacherIds)) {
-    return res.status(400).json({ success:false, message:"teacherIds must be an array." });
-  }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    // 1) Load existing class
-    const cls = await Class.findById(classId).session(session);
-    if (!cls) throw new Error("Class not found");
-
-    const old = cls.teachers.map(String);
-    const neu = teacherIds.map(String);
-
-    // 2) Update class document
-    cls.teachers = neu;
-    await cls.save({ session });
-
-    // 3) Compute diffs for Teacher.docs
-    const toAdd    = neu.filter(id => !old.includes(id));
-    const toRemove = old.filter(id => !neu.includes(id));
-
-    // 4) Sync Teacher.classes arrays
-    if (toAdd.length) {
-      await Teacher.updateMany(
-        { _id: { $in: toAdd } },
-        { $addToSet: { classes: cls._id } },
-        { session }
-      );
-    }
-    if (toRemove.length) {
-      await Teacher.updateMany(
-        { _id: { $in: toRemove } },
-        { $pull:    { classes: cls._id } },
-        { session }
-      );
+    // 1) Validate input
+    if (!Array.isArray(teacherIds)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "teacherIds must be an array." });
     }
 
-    await session.commitTransaction();
-    session.endSession();
+    try {
+      // 2) Load the class
+      const cls = await Class.findById(classId);
+      if (!cls) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found." });
+      }
 
-    // 5) Return populated list
-    const populated = await Class.findById(classId)
-      .populate("teachers", "name email teacherId");
-    res.json({ success:true, data: populated.teachers });
+      // 3) Compute which teachers to add/remove
+      const oldIds = cls.teachers.map(id => id.toString());
+      const newIds = teacherIds.map(id => id.toString());
 
-  } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
-    next(err);
-  }
-},
+      const toAdd    = newIds.filter(id => !oldIds.includes(id));
+      const toRemove = oldIds.filter(id => !newIds.includes(id));
+
+      // 4) Update the Class document
+      cls.teachers = newIds;
+      await cls.save();
+
+      // 5) Sync the Teacher documents
+      if (toAdd.length) {
+        await Teacher.updateMany(
+          { _id: { $in: toAdd } },
+          { $addToSet: { classes: cls._id } }
+        );
+      }
+      if (toRemove.length) {
+        await Teacher.updateMany(
+          { _id: { $in: toRemove } },
+          { $pull: { classes: cls._id } }
+        );
+      }
+
+      // 6) Return the updated teacher list
+      const populated = await Class.findById(classId)
+        .populate("teachers", "name email teacherId");
+
+      res.json({ success: true, data: populated.teachers });
+    } catch (err) {
+      next(err);
+    }
+  },
 
   // GET /classes/:classId/subjects
   getClassSubjects: async (req, res) => {
