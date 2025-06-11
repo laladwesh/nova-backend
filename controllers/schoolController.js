@@ -32,7 +32,7 @@ const { School } = require("../models");
  */
 exports.createSchool = async (req, res) => {
   try {
-    const { name, token, address, phone } = req.body;
+    const { name, token, address, phone , email } = req.body;
 
     if (!name) {
       return res.status(400).json({
@@ -57,6 +57,17 @@ exports.createSchool = async (req, res) => {
     if (token) newSchoolData.token = token.trim();
     if (address) newSchoolData.address = address.trim();
     if (phone) newSchoolData.phone = phone.trim();
+    if (email) {
+      newSchoolData.email = email.trim();
+      // Optional: Validate email format if needed
+      // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      // if (!emailRegex.test(newSchoolData.email)) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: "Invalid email format.",
+      //   });
+      // }
+    }
 
     const school = await School.create(newSchoolData);
 

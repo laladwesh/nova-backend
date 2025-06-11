@@ -156,10 +156,20 @@ function isParent(req, res, next) {
   next();
 }
 
+function superAdminAuth(req, res, next) {
+  if (req.body.secretKey !== process.env.SUPER_ADMIN_SECRET_KEY) {
+    return res
+      .status(403)
+      .json({ success: false, message: "Super admin role required." });
+  }
+  next();
+}
+
 module.exports = {
   authenticate,
   isAdmin,
   isTeacher,
   isStudent,
   isParent,
+  superAdminAuth
 };

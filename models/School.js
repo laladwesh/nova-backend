@@ -26,8 +26,13 @@ const SchoolSchema = new Schema(
       type: [{ type: Schema.Types.ObjectId, ref: "Parent" }],
       default: [],
     },
+    admins: {
+      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
     address: { type: String, default: "" },
     phone:   { type: String, default: "" },
+    email:   { type: String, default: "", unique: true}
   },
   { timestamps: true }
 );

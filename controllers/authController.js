@@ -68,9 +68,18 @@ async function generateRefreshToken(user) {
 // @access  Public
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password, role, studentId, classId, schoolId } =
-      req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      studentId,
+      classId,
+      schoolId,
+      secretKey,
+    } = req.body;
 
+    // 1) Required fields
     if (!name || !email || !password || !role || !schoolId) {
       return res.status(400).json({
         success: false,
@@ -78,7 +87,7 @@ exports.signup = async (req, res) => {
       });
     }
 
-    // 2) Validate school
+    // 2) School must exist
     const schoolRecord = await School.findById(schoolId);
     if (!schoolRecord) {
       return res.status(404).json({
@@ -86,31 +95,42 @@ exports.signup = async (req, res) => {
         message: "Invalid schoolId. School not found.",
       });
     }
-    // 3) If student, ensure studentId + classId
-    if (role === "student") {
-      if (!studentId || !classId) {
-        return res.status(400).json({
-          success: false,
-          message: 'studentId and classId are required when role is "student".',
-        });
-      }
+
+    // 3) If creating a school_admin, check secretKey now
+    if (
+      role === "school_admin" &&
+      secretKey !== process.env.SUPER_ADMIN_SECRET_KEY
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Super admin role required.",
+      });
     }
 
-    // 4) Unique email
+    // 4) If student, ensure studentId + classId
+    if (role === "student" && (!studentId || !classId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'studentId and classId are required when role is "student".',
+      });
+    }
+
+    // 5) Email must be unique **before** we write anything
     const existingUser = await User.findOne({
       email: email.toLowerCase().trim(),
     });
     if (existingUser) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Email already in use." });
+      return res.status(409).json({
+        success: false,
+        message: "Email already in use.",
+      });
     }
 
-    // 5) Hash password
+    // 6) Hash password
     const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(password.trim(), salt);
 
-    // 6) Build newUserData
+    // 7) Build and create the single User record
     const newUserData = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
@@ -123,54 +143,56 @@ exports.signup = async (req, res) => {
       newUserData.classId = classId;
     }
 
-    // 7) Create User
     const user = await User.create(newUserData);
 
-    // ───────── NEW: if student, create Student record ──────────────────
+    // ───────── Role-specific wiring ────────────────────────────────────
+    if (role === "school_admin") {
+      // just push the new User’s _id into School.admins
+      await School.findByIdAndUpdate(
+        schoolRecord._id,
+        { $push: { admins: user._id } },
+        { new: true }
+      );
+    }
+
     if (role === "student") {
-      // 7.a) Create the Student document
       const studentDoc = await Student.create({
+         _id:user._id, // Use the same _id as User
         studentId: studentId.trim(),
         name: name.trim(),
-        classId: classId,
-        email: email.toLowerCase().trim(),
+        classId,
+        email: user.email,
         schoolId: schoolRecord._id,
-        // any other StudentSchema defaults will apply
       });
-
-      // 7.b) Push into Class.students
       await Class.findByIdAndUpdate(
         classId,
         { $push: { students: studentDoc._id } },
         { new: true }
       );
     }
+
     if (role === "teacher") {
-      // 7.a) Create the Teacher document
       const teacherDoc = await Teacher.create({
-        teacherId: crypto.randomBytes(4).toString("hex"), // e.g. “9f1a2b3c”
+        _id:user._id, // Use the same _id as User
+        teacherId: crypto.randomBytes(4).toString("hex"),
         name: name.trim(),
-        email: email.toLowerCase().trim(),
+        email: user.email,
         schoolId: schoolRecord._id,
-        // any other TeacherSchema defaults will apply
       });
-      // 7.b) Push into School.teachers
       await School.findByIdAndUpdate(
         schoolRecord._id,
-        { $push: { teachers: teacherDoc._id } },
+        { $push: { teachers: user._id } },
         { new: true }
       );
     }
 
     if (role === "parent") {
-      // 7.a) Create the Parent document
       const parentDoc = await Parent.create({
+         _id:user._id, // Use the same _id as User
         name: name.trim(),
-        email: email.toLowerCase().trim(),
+        email: user.email,
         schoolId: schoolRecord._id,
-        // any other ParentSchema defaults will apply
       });
-      // 7.b) Push into School.parents
       await School.findByIdAndUpdate(
         schoolRecord._id,
         { $push: { parents: parentDoc._id } },
