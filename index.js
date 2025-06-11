@@ -4,7 +4,7 @@ require("dotenv").config();
 const express = require("express");
 const connectDb = require("./utils/connectDb");
 const cors = require("cors");
-
+const morgan = require('morgan');
 const app = express();
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // body parser, etc.
@@ -35,11 +35,13 @@ const metadataRoutes = require("./routes/metadataRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const schoolRoutes = require("./routes/schoolRoutes");
 //test route for checking server status
+app.use(morgan('dev'));
 app.get("/", (req, res) => {
   res.json({ message: "Server is running" });
 });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 // Mount them under appropriate base paths
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
