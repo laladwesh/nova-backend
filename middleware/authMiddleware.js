@@ -13,7 +13,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here";
 async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
-    console.log("Auth Header:", authHeader);
+    // console.log("Auth Header:", authHeader);
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
         .status(401)
@@ -36,7 +36,7 @@ async function authenticate(req, res, next) {
     // payload should contain at least { userId, iat, exp }
     const user = await User.findById(payload.userId).select("-password");
     
-    console.log("Authenticated User:", user);
+    // console.log("Authenticated User:", user);
     if (!user) {
       return res
         .status(401)
@@ -73,7 +73,7 @@ async function authenticate(req, res, next) {
       email: user.email,
       role: user.role,
     };
-    console.log("Request User:", req.user);
+    // console.log("Request User:", req.user);
     next();
   } catch (err) {
     console.error("Error in authenticate middleware:", err);

@@ -243,9 +243,9 @@ module.exports = {
   // PUT /classes/:classId/teachers
 assignTeachersToClass: async (req, res, next) => {
     const { classId }    = req.params;
-    const { teacherIds } = req.body; // expecting an array of ObjectId strings
+    const { teacherIds } = req.body;  // expecting ["id1","id2",...]
 
-    // 1) Validate input
+    // 1) Validate
     if (!Array.isArray(teacherIds)) {
       return res
         .status(400)
@@ -253,40 +253,28 @@ assignTeachersToClass: async (req, res, next) => {
     }
 
     try {
-      // 2) Load the class
+      // 2) Ensure class exists
       const cls = await Class.findById(classId);
       if (!cls) {
         return res
           .status(404)
           .json({ success: false, message: "Class not found." });
       }
+      // console.log("Class found:", cls.name);
 
-      // 3) Compute which teachers to add/remove
-      const oldIds = cls.teachers.map(id => id.toString());
-      const newIds = teacherIds.map(id => id.toString());
+      // 3) Add teachers to class (no duplicates)
+      await Class.findByIdAndUpdate(
+        classId,
+        { $addToSet: { teachers: { $each: teacherIds } } }
+      );
+// console.log("Teachers added to class:", teacherIds , "to class:", cls.teachers);
+      // 4) Add class to each teacher’s classes array (no duplicates)
+      await Teacher.updateMany(
+        { _id: { $in: teacherIds } },
+        { $addToSet: { classes: classId } }
+      );
 
-      const toAdd    = newIds.filter(id => !oldIds.includes(id));
-      const toRemove = oldIds.filter(id => !newIds.includes(id));
-
-      // 4) Update the Class document
-      cls.teachers = newIds;
-      await cls.save();
-
-      // 5) Sync the Teacher documents
-      if (toAdd.length) {
-        await Teacher.updateMany(
-          { _id: { $in: toAdd } },
-          { $addToSet: { classes: cls._id } }
-        );
-      }
-      if (toRemove.length) {
-        await Teacher.updateMany(
-          { _id: { $in: toRemove } },
-          { $pull: { classes: cls._id } }
-        );
-      }
-
-      // 6) Return the updated teacher list
+      // 5) Return updated list of teachers
       const populated = await Class.findById(classId)
         .populate("teachers", "name email teacherId");
 

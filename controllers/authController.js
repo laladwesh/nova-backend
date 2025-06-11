@@ -40,8 +40,7 @@ function generateAccessToken(user) {
       userId: user._id,
       role: user.role,
     },
-    process.env.JWT_SECRET,
-   
+    process.env.JWT_SECRET
   );
 }
 
@@ -87,7 +86,6 @@ exports.signup = async (req, res) => {
         message: "Invalid schoolId. School not found.",
       });
     }
-
     // 3) If student, ensure studentId + classId
     if (role === "student") {
       if (!studentId || !classId) {
@@ -157,8 +155,7 @@ exports.signup = async (req, res) => {
         // any other TeacherSchema defaults will apply
       });
       // 7.b) Push into School.teachers
-      await
-  School.findByIdAndUpdate(
+      await School.findByIdAndUpdate(
         schoolRecord._id,
         { $push: { teachers: teacherDoc._id } },
         { new: true }
@@ -174,8 +171,7 @@ exports.signup = async (req, res) => {
         // any other ParentSchema defaults will apply
       });
       // 7.b) Push into School.parents
-      await
-      School.findByIdAndUpdate(
+      await School.findByIdAndUpdate(
         schoolRecord._id,
         { $push: { parents: parentDoc._id } },
         { new: true }
@@ -230,19 +226,16 @@ exports.login = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Email and password are required." });
     }
-console.log('Login attempt for email:', email.toLowerCase().trim());
+    console.log("Login attempt for email:", email.toLowerCase().trim());
     const user = await User.findOne({ email: email });
-    console.log('User found:', user);
     // Check if user exists
     if (!user) {
       return res
         .status(401)
         .json({ success: false, message: "email issue Invalid credentials." });
     }
-    // console.log('User found:', user);
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
-    // console.log('Password match:', isMatch);
     if (!isMatch) {
       return res
         .status(401)
@@ -296,12 +289,10 @@ exports.logout = async (req, res) => {
       token: refreshToken,
     });
     if (!deleted) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Refresh token not found or already invalidated.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Refresh token not found or already invalidated.",
+      });
     }
 
     return res
@@ -381,12 +372,10 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       // For security, do not reveal that email does not exist
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message: "If that email is registered, a reset link has been sent.",
-        });
+      return res.status(200).json({
+        success: true,
+        message: "If that email is registered, a reset link has been sent.",
+      });
     }
 
     // Generate a one-time reset token
@@ -443,12 +432,10 @@ exports.resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
     if (!token || !newPassword) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Token and new password are required.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Token and new password are required.",
+      });
     }
 
     // Hash incoming token and find matching record
