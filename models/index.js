@@ -334,7 +334,6 @@ const AttendanceRecordSchema = new Schema(
     //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
-    subject: { type: String, required: true },
     date: { type: Date, required: true },
     entries: { type: [AttendanceEntrySchema], default: [] },
   },

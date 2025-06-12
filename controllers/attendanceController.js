@@ -80,10 +80,9 @@ module.exports = {
   // Expected body: { classId, subject, date, entries: [ { studentId, status } ] }
   markAttendance: async (req, res) => {
     try {
-      const { classId, subject, date, entries } = req.body;
+      const { classId,date, entries } = req.body;
       if (
         !classId ||
-        !subject ||
         !date ||
         !Array.isArray(entries) ||
         entries.length === 0
@@ -91,7 +90,7 @@ module.exports = {
         return res.status(400).json({
           success: false,
           message:
-            "classId, subject, date, and a non-empty entries array are required.",
+            "classId, bject, date, and a non-empty entries array are required.",
         });
       }
       if (!mongoose.Types.ObjectId.isValid(classId)) {
@@ -116,26 +115,24 @@ module.exports = {
         }
       }
 
-      // Check that no record already exists for the same classId, subject, and date
+      // Check that no record already exists for the same classId,and date
       const recordDate = new Date(date);
       const nextDate = new Date(recordDate);
       nextDate.setDate(recordDate.getDate() + 1);
       const existing = await AttendanceRecord.findOne({
         classId,
-        subject,
         date: { $gte: recordDate, $lt: nextDate },
       });
       if (existing) {
         return res.status(409).json({
           success: false,
           message:
-            "Attendance already marked for this class, subject, and date.",
+            "Attendance already marked for this class, and date.",
         });
       }
 
       const newRecord = await AttendanceRecord.create({
         classId,
-        subject,
         date: recordDate,
         entries,
       });
