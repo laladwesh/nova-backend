@@ -41,7 +41,7 @@ const User = require("./User");
 const RefreshToken = require("./RefreshToken");
 const PasswordResetToken = require("./PasswordResetToken");
 const School = require("./School");
-
+const Schedule = require("./Schedule");
 // ────────────────────────────────────────────────────────────────────────────────
 // 1. CLASS
 // ────────────────────────────────────────────────────────────────────────────────
@@ -543,4 +543,5 @@ module.exports = {
   Message,
   PTMSlot,
   PTMBooking,
+  Schedule
 };

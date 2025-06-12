@@ -49,7 +49,7 @@ module.exports = {
       }
       const schedules = await Schedule.find(filter)
         .populate("classId", "name grade section year")
-        .populate("periods.teacherId", "name teacherId")
+        .populate("periods.teacherId", "name teacherId").populate("periods.subject", "name code")
         .select("-__v");
       return res.status(200).json({ success: true, data: schedules });
     } catch (err) {
@@ -112,7 +112,7 @@ module.exports = {
       const newSchedule = await Schedule.create({ classId, periods });
       const populated = await Schedule.findById(newSchedule._id)
         .populate("classId", "name grade section year")
-        .populate("periods.teacherId", "name teacherId");
+        .populate("periods.teacherId", "name teacherId").populate("periods.subject", "name code");
 
       return res.status(201).json({
         success: true,
@@ -138,7 +138,7 @@ module.exports = {
       }
       const schedule = await Schedule.findById(scheduleId)
         .populate("classId", "name grade section year")
-        .populate("periods.teacherId", "name teacherId");
+        .populate("periods.teacherId", "name teacherId").populate("periods.subject", "name code");
       if (!schedule) {
         return res
           .status(404)
@@ -209,7 +209,7 @@ module.exports = {
         { new: true, runValidators: true, context: "query" }
       )
         .populate("classId", "name grade section year")
-        .populate("periods.teacherId", "name teacherId");
+        .populate("periods.teacherId", "name teacherId").populate("periods.subject", "name code");
 
       if (!updated) {
         return res
@@ -267,7 +267,7 @@ module.exports = {
       // Find all schedules where any period’s teacherId matches
       const schedules = await Schedule.find({ "periods.teacherId": teacherId })
         .populate("classId", "name grade section year")
-        .populate("periods.teacherId", "name teacherId");
+        .populate("periods.teacherId", "name teacherId").populate("periods.subject", "name code");
       return res.status(200).json({ success: true, data: schedules });
     } catch (err) {
       console.error("scheduleController.getTeacherSchedule error:", err);
@@ -294,7 +294,8 @@ module.exports = {
       }
       const schedule = await Schedule.findOne({ classId: student.classId })
         .populate("classId", "name grade section year")
-        .populate("periods.teacherId", "name teacherId");
+        .populate("periods.teacherId", "name teacherId").populate("periods.subject", "name code");
+        
       if (!schedule) {
         return res
           .status(404)
