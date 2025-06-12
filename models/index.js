@@ -100,7 +100,7 @@ const ParentSchema = new Schema(
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     students: [{ type: Schema.Types.ObjectId, ref: "Student" }], // array of student IDs
   },
-  { _id: false }
+  { timestamps: true }
 );
 const Parent = model("Parent", ParentSchema);
 // ────────────────────────────────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ const StudentSchema = new Schema(
     email: { type: String, unique: true },
     feePaid: { type: Boolean, default: false },
 
-    parents: { type: [ParentSchema], default: [] },
+    parents:       [{ type: Schema.Types.ObjectId, ref: "Parent" }],
     academicReport: { type: AcademicReportSchema, default: () => ({}) },
   },
   { timestamps: true }
