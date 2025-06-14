@@ -344,26 +344,58 @@ const AttendanceRecord = model("AttendanceRecord", AttendanceRecordSchema);
 // ────────────────────────────────────────────────────────────────────────────────
 // 11. GRADE
 // ────────────────────────────────────────────────────────────────────────────────
-const GradeSchema = new Schema(
+// models/Grade.j
+const EntrySchema = new Schema(
   {
-    //adding SchoolId
-    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
-    studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
-    subject: { type: String, required: true },
-    examType: {
-      type: String,
-      enum: ["unit_test", "midterm", "final", "quiz", "project"],
+    studentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Student",
       required: true,
     },
-    marksObtained: { type: Number, required: true },
-    maxMarks: { type: Number, required: true },
-    comments: { type: String },
-    teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
-    gradedAt: { type: Date, default: Date.now },
+    percentage: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+  },
+  { _id: false }
+);
+
+const GradeSchema = new Schema(
+  {
+    schoolId: {
+      type: Schema.Types.ObjectId,
+      ref: "School",
+      required: true,
+    },
+    classId: {
+      type: Schema.Types.ObjectId,
+      ref: "Class",
+      required: true,
+    },
+    subjectId: {
+      type: Schema.Types.ObjectId,
+      ref: "Subject",
+      required: true,
+    },
+    teacherId: {
+      type: Schema.Types.ObjectId,
+      ref: "Teacher",
+      required: true,
+    },
+    // Only one “final” exam type per doc:
+    entries: {
+      type: [EntrySchema],
+      default: [],
+      validate: (arr) => arr.length > 0,
+    },
   },
   { timestamps: true }
 );
-const Grade = model("Grade", GradeSchema);
+
+const Grade = mongoose.model("Grade", GradeSchema);
+
 
 // ────────────────────────────────────────────────────────────────────────────────
 // 12. LESSON PLAN
