@@ -79,13 +79,13 @@ module.exports = {
   // POST /assignments
   createAssignment: async (req, res) => {
     try {
-      const { teacherId, classId, subject, title, description, dueDate } =
+      const { teacherId, classId, schoolId, subject, title, description, dueDate } =
         req.body;
-      if (!teacherId || !classId || !subject || !title || !dueDate) {
+      if (!teacherId || !classId || !schoolId || !subject || !title || !dueDate) {
         return res.status(400).json({
           success: false,
           message:
-            "teacherId, classId, subject, title, and dueDate are required.",
+            "teacherId, classId, schoolId, subject, title, and dueDate are required.",
         });
       }
       if (!mongoose.Types.ObjectId.isValid(teacherId)) {
@@ -97,6 +97,11 @@ module.exports = {
         return res
           .status(400)
           .json({ success: false, message: "Invalid classId." });
+      }
+      if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid schoolId." });
       }
 
       // Validate teacher
@@ -118,6 +123,7 @@ module.exports = {
       const newAssignment = await Assignment.create({
         teacherId,
         classId,
+        schoolId,
         subject,
         title,
         description: description || "",

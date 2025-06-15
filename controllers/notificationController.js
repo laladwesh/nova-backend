@@ -48,7 +48,7 @@ module.exports = {
   // POST /notifications
   createNotification: async (req, res) => {
     try {
-      const { type, message, studentId, teacherId, audience, scheduleAt } =
+      const { type, message, studentId, teacherId, audience, scheduleAt, schoolId } =
         req.body;
 
       if (!type || !message) {
@@ -64,8 +64,15 @@ module.exports = {
             "Invalid type. Must be one of: Student, Teacher, Announcement.",
         });
       }
+      
+      if (!schoolId || !mongoose.Types.ObjectId.isValid(schoolId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid schoolId is required."
+        });
+      }
 
-      const notificationData = { type, message };
+      const notificationData = { type, message, schoolId };
 
       if (type === "Student") {
         if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
@@ -171,7 +178,7 @@ module.exports = {
   createTeacherNotification: async (req, res) => {
     try {
       const { teacherId } = req.params;
-      const { message, scheduleAt } = req.body;
+      const { message, scheduleAt, schoolId } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(teacherId)) {
         return res
@@ -182,6 +189,12 @@ module.exports = {
         return res
           .status(400)
           .json({ success: false, message: "message is required." });
+      }
+      if (!schoolId || !mongoose.Types.ObjectId.isValid(schoolId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid schoolId is required."
+        });
       }
 
       // Ensure teacher exists
@@ -196,6 +209,7 @@ module.exports = {
         type: "Teacher",
         message,
         teacherId,
+        schoolId
       };
 
       if (scheduleAt) {

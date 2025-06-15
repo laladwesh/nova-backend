@@ -77,10 +77,12 @@ module.exports = {
   },
 
   // POST /attendance
-  // Expected body: { classId, subject, date, entries: [ { studentId, status } ] }
+  // Expected body: { classId, date, entries: [ { studentId, status } ] }
   markAttendance: async (req, res) => {
     try {
-      const { classId,date, entries } = req.body;
+      const { classId, date, entries } = req.body;
+      const { schoolId } = req.query; // Get schoolId from query params
+      
       if (
         !classId ||
         !date ||
@@ -90,13 +92,27 @@ module.exports = {
         return res.status(400).json({
           success: false,
           message:
-            "classId, bject, date, and a non-empty entries array are required.",
+            "classId, date, and a non-empty entries array are required.",
         });
       }
+      
+      if (!schoolId) {
+        return res.status(400).json({
+          success: false,
+          message: "schoolId is required.",
+        });
+      }
+      
       if (!mongoose.Types.ObjectId.isValid(classId)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid classId." });
+      }
+      
+      if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid schoolId." });
       }
 
       // Validate student IDs in entries
@@ -115,24 +131,26 @@ module.exports = {
         }
       }
 
-      // Check that no record already exists for the same classId,and date
+      // Check that no record already exists for the same classId and date
       const recordDate = new Date(date);
       const nextDate = new Date(recordDate);
       nextDate.setDate(recordDate.getDate() + 1);
       const existing = await AttendanceRecord.findOne({
         classId,
+        schoolId,
         date: { $gte: recordDate, $lt: nextDate },
       });
       if (existing) {
         return res.status(409).json({
           success: false,
           message:
-            "Attendance already marked for this class, and date.",
+            "Attendance already marked for this class and date.",
         });
       }
 
       const newRecord = await AttendanceRecord.create({
         classId,
+        schoolId,
         date: recordDate,
         entries,
       });

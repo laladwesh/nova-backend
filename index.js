@@ -34,6 +34,7 @@ const searchRoutes = require("./routes/searchRoutes");
 const metadataRoutes = require("./routes/metadataRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const schoolRoutes = require("./routes/schoolRoutes");
+const fcmRoutes = require("./routes/fcmRoutes");
 //test route for checking server status
 app.use(morgan('dev'));
 app.get("/", (req, res) => {
@@ -67,6 +68,7 @@ app.use("/ptm", ptmRoutes);
 app.use("/search", searchRoutes);
 app.use("/metadata", metadataRoutes);
 app.use("/upload", uploadRoutes);
+app.use("/fcm", fcmRoutes);
 
 // Fallback 404 handler
 app.use((req, res) => {

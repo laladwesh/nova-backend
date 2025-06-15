@@ -375,8 +375,7 @@ const GradeSchema = new Schema(
       required: true,
     },
     subjectId: {
-      type: Schema.Types.ObjectId,
-      ref: "Subject",
+      type: String,
       required: true,
     },
     teacherId: {
@@ -384,7 +383,7 @@ const GradeSchema = new Schema(
       ref: "Teacher",
       required: true,
     },
-    // Only one “final” exam type per doc:
+    // Only one "final" exam type per doc:
     entries: {
       type: [EntrySchema],
       default: [],

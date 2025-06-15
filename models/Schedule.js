@@ -19,7 +19,7 @@ const PeriodSchema = new Schema(
     },
     periodNumber: { type: Number, required: true },
     // if you already have a Subject model, reference it here:
-    subject: { type: Schema.Types.ObjectId, ref: "Subject", required: true },
+    subject: { type: String , required: true },
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
     startTime: { type: String, required: true }, // e.g. "09:00"
     endTime: { type: String, required: true },   // e.g. "09:45"

@@ -19,7 +19,7 @@ module.exports = {
         });
       }
       // 2) Check IDs
-      for (let id of [schoolId, classId, subjectId, teacherId]) {
+      for (let id of [schoolId, classId, teacherId]) {
         if (!mongoose.Types.ObjectId.isValid(id)) {
           return res.status(400).json({ success: false, message: `Invalid ID ${id}` });
         }

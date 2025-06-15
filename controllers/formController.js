@@ -69,9 +69,9 @@ module.exports = {
           .json({ success: false, message: "data (object) is required." });
       }
 
-      // Verify student exists
-      const studentExists = await Student.exists({ _id: studentId });
-      if (!studentExists) {
+      // Verify student exists and get their schoolId
+      const student = await Student.findById(studentId);
+      if (!student) {
         return res
           .status(404)
           .json({ success: false, message: "Student not found." });
@@ -79,6 +79,7 @@ module.exports = {
 
       const newForm = await Form.create({
         studentId,
+        schoolId: student.schoolId, // Add the schoolId from the student
         type,
         data,
         status: "pending",

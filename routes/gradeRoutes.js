@@ -8,7 +8,7 @@ router.post(
   "/",
   authenticate,
   (req, res, next) => {
-    if (req.user.role !== "school_admin") {
+    if (req.user.role !== "teacher" && req.user.role !== "school_admin") {
       return res.status(403).json({ success: false, message: "Admin role required." });
     }
     next();
