@@ -69,6 +69,7 @@ app.use("/search", searchRoutes);
 app.use("/metadata", metadataRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/fcm", fcmRoutes);
+app.use('/story', require('./routes/storyRoutes')); // Story routes
 
 // Fallback 404 handler
 app.use((req, res) => {
