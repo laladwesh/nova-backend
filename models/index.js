@@ -42,6 +42,7 @@ const RefreshToken = require("./RefreshToken");
 const PasswordResetToken = require("./PasswordResetToken");
 const School = require("./School");
 const Schedule = require("./Schedule");
+const Story = require("./Story");
 // ────────────────────────────────────────────────────────────────────────────────
 // 1. CLASS
 // ────────────────────────────────────────────────────────────────────────────────
@@ -568,6 +569,7 @@ module.exports = {
   Grade,
   LessonPlan,
   Form,
+  Story,
   Resource,
   Conversation,
   Message,
