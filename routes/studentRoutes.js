@@ -69,7 +69,7 @@ function canViewProgress(req, res, next) {
  *    – Only Teacher or Admin may list students.
  */
 router.get("/", authenticate, isTeacherOrAdmin, studentController.listStudents);
-router.get('/:parentId' , authenticate, isTeacherOrAdmin, studentController.getStudentByParentId);
+router.get('/:parentId' , authenticate,  studentController.getStudentByParentId);
 /**
  * 2. POST '/' – create a new student
  *    – Only Teacher or Admin may create student records.
