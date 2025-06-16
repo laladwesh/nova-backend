@@ -264,4 +264,72 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
+  uploadImage: async (req, res) => {
+    try {
+      const userId = req.user._id;
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized." });
+      }
+
+      const urlPath = req.body.urlPath;
+      if (!urlPath) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Image URL is required." });
+      }
+
+      // Update user profile with new image URL
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { imageUrl: urlPath },
+        { new: true, runValidators: true, context: "query" }
+      ).select("-password -__v");
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Profile image updated successfully.",
+        data: user,
+      });
+    } catch (err) {
+      console.error("UserController.uploadImage error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  },
+  getImage: async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      if (!userId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User ID is required." });
+      }
+
+      const user = await User.findById(userId).select("imageUrl");
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: { imageUrl: user.imageUrl },
+      });
+    } catch (err) {
+      console.error("UserController.getImage error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  },
 };

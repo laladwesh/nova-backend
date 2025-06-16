@@ -11,6 +11,7 @@ const router = express.Router();
 const { authenticate, isAdmin } = require("../middleware/authMiddleware");
 // Controller with business logic for user operations
 const userController = require("../controllers/userController");
+const { route } = require("./authRoutes");
 
 ///////////////////////////
 // Profile Endpoints
@@ -37,6 +38,23 @@ router.put(
   authenticate,            // Only logged-in users
   userController.updateProfile // Handler updates profile fields in database
 );
+
+router.get('/me/image/:userId' , 
+  authenticate,            // Ensure the request has a valid auth token
+  userController.getImage // Handler retrieves user image by userId
+);
+
+
+router.post(
+  "/me/image",
+  authenticate,            // Only logged-in users
+  userController.uploadImage // Handler uploads image and updates user profile
+);
+
+
+
+
+
 
 /**
  * PUT '/me/password'

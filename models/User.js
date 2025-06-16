@@ -31,6 +31,11 @@ const UserSchema = new Schema(
       ref: "School",
       required: true,
     },
+    imageUrl: {
+      type: String,
+      default: "https://www.gravatar.com/avatar",
+      trim: true,   // Ensure the URL is trimmed    
+    },
 
     // ─── ADD THESE TWO FIELDS ─────────────────────────────────────────────────
     studentId: {
