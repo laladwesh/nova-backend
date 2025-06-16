@@ -48,7 +48,7 @@ router.get(
 /**
  * 7. PUT '/:classId/teachers' – assign teachers to a class (sync both sides)
  *    – Only Admin can modify a class’s teacher assignments.
-*/
+ */
 router.put(
   "/:classId/teachers",
   authenticate,
