@@ -17,7 +17,4 @@ router.post(
   schoolController.createSchool
 );
 
-// Optional: GET /schools to list them
-// router.get('/', protect, authorize('super_admin'), schoolController.listSchools);
-
 module.exports = router;
