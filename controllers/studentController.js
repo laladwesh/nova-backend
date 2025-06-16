@@ -182,7 +182,6 @@ module.exports = {
           .json({ success: false, message: "Invalid studentId." });
       }
 
-<<<<<<< HEAD
       const query = { _id: studentId };
       
       // Add schoolId filter if provided
@@ -196,10 +195,6 @@ module.exports = {
       }
 
       const student = await Student.findOne(query)
-=======
-      // Find and populate class info
-      const student = await Student.findById(studentId)
->>>>>>> 258514aa2fd114c44341ee43a3e9fa9be393d8d0
         .populate("classId", "name grade section year")
         .select("-__v");
 
