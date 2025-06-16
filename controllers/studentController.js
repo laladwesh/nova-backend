@@ -334,6 +334,7 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
+  // GET /student/:parentId
   getStudentByParentId: async (req, res) => {
     try {
       const { parentId } = req.params;
