@@ -5,8 +5,7 @@ const router = express.Router();
 const {
   authenticate,
   isAdmin,
-  isTeacher,
-  isStudent,
+  isTeacher
 } = require("../middleware/authMiddleware");
 const analyticsController = require("../controllers/analyticsController");
 
