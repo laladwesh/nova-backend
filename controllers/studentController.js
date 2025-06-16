@@ -365,5 +365,41 @@ module.exports = {
         .status(500)
         .json({ success: false, message: "Internal server error." });
     }
+  },
+  getParentNameByStudentId: async (req, res) => {
+    try {
+      const { studentId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid studentId." });
+      }
+
+      const student = await Student.findById(studentId)
+        .select("parents")
+        .populate("parents", "name");
+
+      if (!student) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Student not found." });
+      }
+
+      const parentNames = student.parents.map(parent => parent.name);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          studentId,
+          parentNames,
+        },
+      });
+    } catch (err) {
+      console.error("studentController.getParentNameByStudentId error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
   }
 };
