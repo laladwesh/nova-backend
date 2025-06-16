@@ -334,4 +334,36 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
+  // GET /student/:parentId
+  getStudentByParentId: async (req, res) => {
+    try {
+      const { parentId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(parentId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid parentId." });
+      }
+
+      const students = await Student.find({ parents: parentId })
+        .populate("classId", "name grade section year")
+        .select("-__v");
+
+      if (students.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "No students found for this parent." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: students,
+      });
+    } catch (err) {
+      console.error("studentController.getStudentByParentId error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  }
 };

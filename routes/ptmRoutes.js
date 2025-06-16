@@ -4,9 +4,6 @@ const router = express.Router();
 
 const {
   authenticate,
-  isAdmin,
-  isTeacher,
-  isParent,
 } = require("../middleware/authMiddleware");
 const ptmController = require("../controllers/ptmController");
 

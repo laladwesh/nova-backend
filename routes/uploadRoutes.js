@@ -36,6 +36,5 @@ function isTeacherOrAdmin(req, res, next) {
  */
 
 router.post("/", upload.single("file"), authenticate , isTeacherOrAdmin, uploadController.uploadResource);
-// router.post("/", authenticate, isTeacherOrAdmin, uploadController.uploadFile);
 
 module.exports = router;
