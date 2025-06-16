@@ -105,13 +105,16 @@ module.exports = {
       if (!classExists) {
         return res
           .status(404)
-          .json({ success: false, message: "Class not found or doesn't belong to this school." });
+          .json({
+            success: false,
+            message: "Class not found or doesn't belong to this school.",
+          });
       }
 
       // Add schoolId to each parent object
-      const parentsWithSchoolId = parents.map(parent => ({
+      const parentsWithSchoolId = parents.map((parent) => ({
         ...parent,
-        schoolId
+        schoolId,
       }));
 
       // Create student document
@@ -352,7 +355,10 @@ module.exports = {
       if (students.length === 0) {
         return res
           .status(404)
-          .json({ success: false, message: "No students found for this parent." });
+          .json({
+            success: false,
+            message: "No students found for this parent.",
+          });
       }
 
       return res.status(200).json({
@@ -376,9 +382,7 @@ module.exports = {
           .json({ success: false, message: "Invalid studentId." });
       }
 
-      const student = await Student.findById(studentId)
-        .select("parents")
-        .populate("parents", "name");
+      const student = await Student.findById(studentId).select("parents"); // <-- don’t populate, just grab the raw ObjectIds
 
       if (!student) {
         return res
@@ -386,13 +390,13 @@ module.exports = {
           .json({ success: false, message: "Student not found." });
       }
 
-      const parentNames = student.parents.map(parent => parent.name);
+      const parentIds = student.parents; // this is an array of ObjectId
 
       return res.status(200).json({
         success: true,
         data: {
           studentId,
-          parentNames,
+          parentIds,
         },
       });
     } catch (err) {
@@ -401,5 +405,5 @@ module.exports = {
         .status(500)
         .json({ success: false, message: "Internal server error." });
     }
-  }
+  },
 };
