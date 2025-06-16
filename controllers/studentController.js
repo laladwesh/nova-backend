@@ -151,6 +151,7 @@ module.exports = {
   getStudentById: async (req, res) => {
     try {
       const { studentId } = req.params;
+      const { schoolId } = req.query;
 
       if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res
@@ -158,7 +159,19 @@ module.exports = {
           .json({ success: false, message: "Invalid studentId." });
       }
 
-      const student = await Student.findById(studentId)
+      const query = { _id: studentId };
+      
+      // Add schoolId filter if provided
+      if (schoolId) {
+        if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid schoolId." });
+        }
+        query.schoolId = schoolId;
+      }
+
+      const student = await Student.findOne(query)
         .populate("classId", "name grade section year")
         .select("-__v");
 
