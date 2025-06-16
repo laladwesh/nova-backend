@@ -1,8 +1,8 @@
 // models/index.js
 
 /**
- * This file defines all domain‐specific schemas (Class, Teacher, Student, etc.)
- * and also re‐exports the three authentication models from their own files.
+ * This file defines all domain-specific schemas (Class, Teacher, Student, etc.)
+ * and re-exports the authentication models from their own files.
  *
  * In any controller you can now write:
  *   const {
@@ -35,16 +35,27 @@ const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 0. Re‐export Auth Models
+// 0. Re-export Authentication Models
 // ────────────────────────────────────────────────────────────────────────────────
 const User = require("./User");
 const RefreshToken = require("./RefreshToken");
 const PasswordResetToken = require("./PasswordResetToken");
+
+// ────────────────────────────────────────────────────────────────────────────────
+// 1. SCHOOL
+// ────────────────────────────────────────────────────────────────────────────────
 const School = require("./School");
+
+// ────────────────────────────────────────────────────────────────────────────────
+// 2. SCHEDULE & STORY (additional domain models)
+// ────────────────────────────────────────────────────────────────────────────────
 const Schedule = require("./Schedule");
 const Story = require("./Story");
+
 // ────────────────────────────────────────────────────────────────────────────────
-// 1. CLASS
+// 3. CLASS
+// Defines a Class (e.g., “10–A”), links to School, Teachers, Students, Subjects,
+// and stores analytics like attendance percentage and average grade.
 // ────────────────────────────────────────────────────────────────────────────────
 const ClassSchema = new Schema(
   {
@@ -52,10 +63,9 @@ const ClassSchema = new Schema(
     grade: { type: String, required: true }, // e.g. “10”
     section: { type: String, required: true }, // e.g. “A”
     year: { type: Number, required: true }, // e.g. 2025
-
-    teachers: [{ type: Schema.Types.ObjectId, ref: "Teacher" }], // array of teacher IDs
+    teachers: [{ type: Schema.Types.ObjectId, ref: "Teacher" }],
     subjects: [{ type: String, required: true }], // e.g. ["Math","Physics"]
-    students: [{ type: Schema.Types.ObjectId, ref: "Student" }], // array of student IDs
+    students: [{ type: Schema.Types.ObjectId, ref: "Student" }],
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     analytics: {
       attendancePct: { type: Number, min: 0, max: 100, default: 0 },
@@ -65,10 +75,12 @@ const ClassSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const Class = model("Class", ClassSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 2. TEACHER
+// 4. TEACHER
+// Stores teacher credentials, assignments, linked Classes, and their roles.
 // ────────────────────────────────────────────────────────────────────────────────
 const TeacherSchema = new Schema(
   {
@@ -78,20 +90,19 @@ const TeacherSchema = new Schema(
     phone: { type: String },
     dateJoined: { type: Date, default: Date.now },
     salaryPaid: { type: Boolean, default: false },
-    //adding schoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
-
     roles: [{ type: String, trim: true }], // e.g. ["ClassTeacher","LabInstructor"]
     teachingSubs: [{ type: String, required: true }], // e.g. ["Math","Physics"]
-
     classes: [{ type: Schema.Types.ObjectId, ref: "Class" }],
   },
   { timestamps: true }
 );
+
 const Teacher = model("Teacher", TeacherSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 3. PARENT (Embedded Subdocument)
+// 5. PARENT (Embedded Subdocument)
+// Tracks parent contact info and associated students.
 // ────────────────────────────────────────────────────────────────────────────────
 const ParentSchema = new Schema(
   {
@@ -99,18 +110,21 @@ const ParentSchema = new Schema(
     phone: { type: String },
     email: { type: String },
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
-    students: [{ type: Schema.Types.ObjectId, ref: "Student" }], // array of student IDs
+    students: [{ type: Schema.Types.ObjectId, ref: "Student" }],
   },
   { timestamps: true }
 );
+
 const Parent = model("Parent", ParentSchema);
+
 // ────────────────────────────────────────────────────────────────────────────────
-// 4. STUDENT
+// 6. STUDENT
+// Stores student demographics, class link, fee status, parents, and academic report.
 // ────────────────────────────────────────────────────────────────────────────────
 const SubjectGradeSchema = new Schema(
   {
-    subject: { type: String, required: true }, // e.g. “Math”
-    grade: { type: String, required: true }, // e.g. “A+” or “85”
+    subject: { type: String, required: true },
+    grade: { type: String, required: true },
   },
   { _id: false }
 );
@@ -128,7 +142,6 @@ const StudentSchema = new Schema(
     studentId: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
-
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     dob: { type: Date },
     gender: {
@@ -140,63 +153,63 @@ const StudentSchema = new Schema(
     phone: { type: String },
     email: { type: String, unique: true },
     feePaid: { type: Boolean, default: false },
-
-    parents:       [{ type: Schema.Types.ObjectId, ref: "Parent" }],
+    parents: [{ type: Schema.Types.ObjectId, ref: "Parent" }],
     academicReport: { type: AcademicReportSchema, default: () => ({}) },
   },
   { timestamps: true }
 );
+
 const Student = model("Student", StudentSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 5. EVENT
+// 7. EVENT
+// School events with date, time, venue, and description.
 // ────────────────────────────────────────────────────────────────────────────────
 const EventSchema = new Schema(
   {
     name: { type: String, required: true },
     description: { type: String },
     date: { type: Date, required: true },
-    //adding SchoolId
-    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     time: { type: String }, // e.g. “14:30”
     venue: { type: String },
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
   },
   { timestamps: true }
 );
+
 const Event = model("Event", EventSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 6. NOTIFICATION
+// 8. NOTIFICATION
+// Messages to students, teachers, or announcements, optionally scheduled.
 // ────────────────────────────────────────────────────────────────────────────────
 const NotificationSchema = new Schema(
   {
     type: {
       type: String,
-      enum: ["Student", "Teacher", "Announcement", "Class", "Parent"],
+      enum: ["Student", "Teacher", "Announcement"],
       required: true,
     },
     message: { type: String, required: true },
-    //adding SchoolId
-    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
-    studentId: { type: Schema.Types.ObjectId, ref: "Student" }, // if type=Student
-    teacherId: { type: Schema.Types.ObjectId, ref: "Teacher" }, // if type=Teacher
-    classId: { type: Schema.Types.ObjectId, ref: "Class" }, // if type=Class
-    parentId: { type: Schema.Types.ObjectId, ref: "Parent" }, // if type=Parent
     audience: {
       type: [String],
       enum: ["all_students", "all_teachers", "all_parents"],
       default: null,
     },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User" }, // User who created the notification
     scheduleAt: { type: Date },
     issuedAt: { type: Date, default: Date.now },
+    studentId: { type: Schema.Types.ObjectId, ref: "Student" },
+    teacherId: { type: Schema.Types.ObjectId, ref: "Teacher" },
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
   },
   { timestamps: true }
 );
+
 const Notification = model("Notification", NotificationSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 7. ACADEMIC CALENDAR
+// 9. ACADEMIC CALENDAR
+// Holidays, exam schedule, and fixed events per academic year.
 // ────────────────────────────────────────────────────────────────────────────────
 const HolidaySchema = new Schema(
   {
@@ -230,15 +243,16 @@ const AcademicCalendarSchema = new Schema(
     holidays: { type: [HolidaySchema], default: [] },
     examSchedule: { type: [ExamSchema], default: [] },
     fixedEvents: { type: [FixedEventSchema], default: [] },
-    //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
   },
   { timestamps: true }
 );
+
 const AcademicCalendar = model("AcademicCalendar", AcademicCalendarSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 8. FEE STRUCTURE & PAYMENT
+// 10. FEE STRUCTURE & PAYMENT
+// Fee amounts per class and payment records by students.
 // ────────────────────────────────────────────────────────────────────────────────
 const FeeStructureSchema = new Schema(
   {
@@ -249,6 +263,7 @@ const FeeStructureSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const FeeStructure = model("FeeStructure", FeeStructureSchema);
 
 const PaymentSchema = new Schema(
@@ -278,14 +293,15 @@ const PaymentSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const Payment = model("Payment", PaymentSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 9. ASSIGNMENT & SUBMISSION
+// 11. ASSIGNMENT & SUBMISSION
+// Teacher assignments per class and student submissions with feedback.
 // ────────────────────────────────────────────────────────────────────────────────
 const AssignmentSchema = new Schema(
   {
-    //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
@@ -297,6 +313,7 @@ const AssignmentSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const Assignment = model("Assignment", AssignmentSchema);
 
 const SubmissionSchema = new Schema(
@@ -316,10 +333,12 @@ const SubmissionSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const Submission = model("Submission", SubmissionSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 10. ATTENDANCE RECORD
+// 12. ATTENDANCE RECORD
+// Daily attendance entries per class and student.
 // ────────────────────────────────────────────────────────────────────────────────
 const AttendanceEntrySchema = new Schema(
   {
@@ -335,7 +354,6 @@ const AttendanceEntrySchema = new Schema(
 
 const AttendanceRecordSchema = new Schema(
   {
-    //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
     date: { type: Date, required: true },
@@ -343,51 +361,27 @@ const AttendanceRecordSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const AttendanceRecord = model("AttendanceRecord", AttendanceRecordSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 11. GRADE
+// 13. GRADE
+// Final exam percentage entries per student for a subject.
 // ────────────────────────────────────────────────────────────────────────────────
-// models/Grade.j
 const EntrySchema = new Schema(
   {
-    studentId: {
-      type: Schema.Types.ObjectId,
-      ref: "Student",
-      required: true,
-    },
-    percentage: {
-      type: Number,
-      required: true,
-      min: 0,
-      max: 100,
-    },
+    studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
+    percentage: { type: Number, required: true, min: 0, max: 100 },
   },
   { _id: false }
 );
 
 const GradeSchema = new Schema(
   {
-    schoolId: {
-      type: Schema.Types.ObjectId,
-      ref: "School",
-      required: true,
-    },
-    classId: {
-      type: Schema.Types.ObjectId,
-      ref: "Class",
-      required: true,
-    },
-    subjectId: {
-      type: String,
-      required: true,
-    },
-    teacherId: {
-      type: Schema.Types.ObjectId,
-      ref: "Teacher",
-      required: true,
-    },
-    // Only one "final" exam type per doc:
+    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
+    classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
+    subjectId: { type: String, required: true },
+    teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
     entries: {
       type: [EntrySchema],
       default: [],
@@ -397,11 +391,11 @@ const GradeSchema = new Schema(
   { timestamps: true }
 );
 
-const Grade = mongoose.model("Grade", GradeSchema);
-
+const Grade = model("Grade", GradeSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 12. LESSON PLAN
+// 14. LESSON PLAN
+// Weekly lesson goals per day for a teacher and class.
 // ────────────────────────────────────────────────────────────────────────────────
 const LessonGoalSchema = new Schema(
   {
@@ -427,7 +421,6 @@ const LessonGoalSchema = new Schema(
 
 const LessonPlanSchema = new Schema(
   {
-    //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
@@ -437,14 +430,15 @@ const LessonPlanSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const LessonPlan = model("LessonPlan", LessonPlanSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 13. FORM / REQUEST
+// 15. FORM / REQUEST
+// Leave requests, event participation, feedback, etc., submitted by students.
 // ────────────────────────────────────────────────────────────────────────────────
 const FormSchema = new Schema(
   {
-    //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
     type: {
@@ -464,14 +458,15 @@ const FormSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const Form = model("Form", FormSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 14. RESOURCE LIBRARY
+// 16. RESOURCE LIBRARY
+// Teaching materials uploaded by teachers for specific classes.
 // ────────────────────────────────────────────────────────────────────────────────
 const ResourceSchema = new Schema(
   {
-    //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     uploadedBy: { type: Schema.Types.ObjectId, ref: "Teacher", required: true },
     classId: { type: Schema.Types.ObjectId, ref: "Class", required: true },
@@ -483,10 +478,12 @@ const ResourceSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const Resource = model("Resource", ResourceSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 15. CONVERSATION & MESSAGE
+// 17. CONVERSATION & MESSAGE
+// Basic chat between users within the school context.
 // ────────────────────────────────────────────────────────────────────────────────
 const ConversationSchema = new Schema(
   {
@@ -495,6 +492,7 @@ const ConversationSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const Conversation = model("Conversation", ConversationSchema);
 
 const MessageSchema = new Schema(
@@ -512,10 +510,12 @@ const MessageSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const Message = model("Message", MessageSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 16. PTM SLOTS & BOOKINGS
+// 18. PTM SLOTS & BOOKINGS
+// Parent-Teacher meeting slots created by teachers and bookings by parents.
 // ────────────────────────────────────────────────────────────────────────────────
 const PTMSlotSchema = new Schema(
   {
@@ -527,11 +527,11 @@ const PTMSlotSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const PTMSlot = model("PTMSlot", PTMSlotSchema);
 
 const PTMBookingSchema = new Schema(
   {
-    //adding SchoolId
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     slotId: { type: Schema.Types.ObjectId, ref: "PTMSlot", required: true },
     parentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
@@ -545,18 +545,22 @@ const PTMBookingSchema = new Schema(
   },
   { timestamps: true }
 );
+
 const PTMBooking = model("PTMBooking", PTMBookingSchema);
 
 // ────────────────────────────────────────────────────────────────────────────────
-// 17. EXPORT EVERYTHING
+// 19. EXPORT EVERYTHING
 // ────────────────────────────────────────────────────────────────────────────────
 module.exports = {
-  // Auth models:
+  // Auth models
   User,
   RefreshToken,
   PasswordResetToken,
+
+  // Domain models
   School,
-  // Domain models:
+  Schedule,
+  Story,
   Class,
   Parent,
   Teacher,
@@ -572,11 +576,9 @@ module.exports = {
   Grade,
   LessonPlan,
   Form,
-  Story,
   Resource,
   Conversation,
   Message,
   PTMSlot,
   PTMBooking,
-  Schedule
 };
