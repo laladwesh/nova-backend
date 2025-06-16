@@ -10,31 +10,16 @@ const {
 } = require("../middleware/authMiddleware");
 const notificationController = require("../controllers/notificationController");
 
-/**
- * Helper inline to allow Teacher OR Admin for listing school‐wide notifications
- */
-function canViewSchoolNotifications(req, res, next) {
-  const role = req.user.role;
-  if (role === "teacher" || role === "school_admin") {
-    return next();
-  }
-  return res
-    .status(403)
-    .json({ success: false, message: "Teacher or Admin role required." });
-}
-
 ///////////////////////////
 // School‐wide notifications
 ///////////////////////////
 
 /**
  * 1. GET '/' – list all school‐wide notifications
- *    – Only Teacher or Admin can view.
+ *    – Open to all users
  */
 router.get(
   "/",
-  authenticate,
-  canViewSchoolNotifications,
   notificationController.listNotifications
 );
 
@@ -47,6 +32,17 @@ router.post(
   authenticate,
   isAdmin,
   notificationController.createNotification
+);
+
+/**
+ * 2a. POST '/push' – send push notification directly
+ *     – Only Admin can send.
+ */
+router.post(
+  "/push",
+  authenticate,
+  isAdmin,
+  notificationController.sendPushNotification
 );
 
 /**
@@ -97,8 +93,53 @@ router.get(
 router.post(
   "/teacher/:teacherId",
   authenticate,
-  isAdmin,
   notificationController.createTeacherNotification
+);
+
+///////////////////////////
+// Class-specific notifications
+///////////////////////////
+
+/**
+ * POST '/class/:classId' - create a notification for a specific class
+ * - Only Teacher or Admin can create class-specific notifications.
+ */
+router.post(
+  "/class/:classId",
+  authenticate,
+  (req, res, next) => {
+    const role = req.user.role;
+    if (role === "teacher" || role === "school_admin") {
+      return next();
+    }
+    return res
+      .status(403)
+      .json({ success: false, message: "Teacher or Admin role required." });
+  },
+  notificationController.createClassNotification
+);
+
+///////////////////////////
+// Student-specific notifications
+///////////////////////////
+
+/**
+ * POST '/student/:studentId' - create a notification for a specific student
+ * - Only Teacher or Admin can create student-specific notifications.
+ */
+router.post(
+  "/student/:studentId",
+  authenticate,
+  (req, res, next) => {
+    const role = req.user.role;
+    if (role === "teacher" || role === "school_admin") {
+      return next();
+    }
+    return res
+      .status(403)
+      .json({ success: false, message: "Teacher or Admin role required." });
+  },
+  notificationController.createStudentNotification
 );
 
 ///////////////////////////
@@ -132,7 +173,18 @@ router.get(
 );
 
 /**
- * 7. PUT '/parent/:parentId/preferences' – update a parent’s notification preferences
+ * POST '/parent/:parentId' - create a notification for a specific parent
+ * - Only Admin can create parent-specific notifications.
+ */
+router.post(
+  "/parent/:parentId",
+  authenticate,
+  isAdmin,
+  notificationController.createParentNotification
+);
+
+/**
+ * 7. PUT '/parent/:parentId/preferences' – update a parent's notification preferences
  *    – Only the parent themself can update their own preferences.
  */
 router.put(
@@ -153,5 +205,7 @@ router.put(
   },
   notificationController.updateParentPreferences
 );
+
+
 
 module.exports = router;

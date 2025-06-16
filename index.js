@@ -1,10 +1,18 @@
 // app.js
 
 require("dotenv").config();
+
+// Initialize Firebase BEFORE requiring any other modules
+console.log('Initializing Firebase from index.js...');
+const { initializeFirebase } = require('./config/firebase');
+const firebaseInitialized = initializeFirebase();
+console.log('Firebase initialization result:', firebaseInitialized);
+
 const express = require("express");
 const connectDb = require("./utils/connectDb");
 const cors = require("cors");
 const morgan = require('morgan');
+
 const app = express();
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // body parser, etc.
@@ -80,6 +88,13 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 const startServer = async () => {
   await connectDb();
+  
+  // Try to initialize Firebase again after database connection, just to be sure
+  if (!firebaseInitialized) {
+    console.log('Trying Firebase initialization again after database connection...');
+    initializeFirebase();
+  }
+  
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 };
 

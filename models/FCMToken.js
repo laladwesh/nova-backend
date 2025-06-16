@@ -11,6 +11,11 @@ const fcmTokenSchema = new mongoose.Schema({
     required: true,
     ref: 'School'
   },
+  classId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    default: null
+  },
   topic: {
     type: String,
     trim: true,
@@ -49,7 +54,7 @@ const fcmTokenSchema = new mongoose.Schema({
 });
 
 // Create compound index for efficient queries
-fcmTokenSchema.index({ objectId: 1, schoolId: 1 });
+fcmTokenSchema.index({ userId: 1, schoolId: 1 });
 fcmTokenSchema.index({ schoolId: 1, topic: 1 });
 fcmTokenSchema.index({ token: 1 }, { unique: true });
 

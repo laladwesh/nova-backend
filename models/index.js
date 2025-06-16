@@ -172,7 +172,7 @@ const NotificationSchema = new Schema(
   {
     type: {
       type: String,
-      enum: ["Student", "Teacher", "Announcement"],
+      enum: ["Student", "Teacher", "Announcement", "Class", "Parent"],
       required: true,
     },
     message: { type: String, required: true },
@@ -180,11 +180,14 @@ const NotificationSchema = new Schema(
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     studentId: { type: Schema.Types.ObjectId, ref: "Student" }, // if type=Student
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher" }, // if type=Teacher
+    classId: { type: Schema.Types.ObjectId, ref: "Class" }, // if type=Class
+    parentId: { type: Schema.Types.ObjectId, ref: "Parent" }, // if type=Parent
     audience: {
       type: [String],
       enum: ["all_students", "all_teachers", "all_parents"],
       default: null,
     },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" }, // User who created the notification
     scheduleAt: { type: Date },
     issuedAt: { type: Date, default: Date.now },
   },

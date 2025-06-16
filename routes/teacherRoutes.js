@@ -39,7 +39,7 @@ function canViewOrEditTeacher(req, res, next) {
  * 1. GET '/' – list all teachers
  *    – Only Admin may list.
  */
-router.get("/", authenticate, isAdmin, teacherController.listTeachers);
+router.get("/", authenticate, teacherController.listTeachers);
 
 /**
  * 2. POST '/' – create a new teacher
