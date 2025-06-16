@@ -46,13 +46,3 @@ router.get("/:userId/role", authenticate, isAdmin, userController.getUserRole);
 router.put("/:userId/role", authenticate, isAdmin, userController.setUserRole);
 
 module.exports = router;
-// /**
-//  * 7. DELETE '/:userId/role' – remove a user’s role
-//  *    – Only Admin may remove a user’s role.
-//  */
-// router.delete(
-//   '/:userId/role',
-//   authenticate,
-//   isAdmin,
-//   userController.removeUserRole
-// );
