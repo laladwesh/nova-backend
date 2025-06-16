@@ -15,7 +15,7 @@
  */
 
 const mongoose = require("mongoose");
-const { AttendanceRecord, Student, Class } = require("../models");
+const { AttendanceRecord, Student } = require("../models");
 
 // Utility to convert an array of objects to CSV string
 function arrayToCsv(rows, headers) {
