@@ -1,13 +1,15 @@
-// controllers/studentController.js
-
 /**
+ * controllers/studentController.js
+ *
  * Student Controller
  *  - listStudents:   Return all students (with optional pagination/filter by class)
  *  - createStudent:  Create a new student profile
- *  - getStudentById: Return a single student by ID (with populated class and parents)
+ *  - getStudentById:  Return a single student by ID (with populated class and parents)
  *  - updateStudent:  Update fields of a student
  *  - deleteStudent:  Delete (or deactivate) a student
  *  - getProgress:    Return the academicReport for a student
+ *  - getStudentByParentId: Return all students for a given parent
+ *  - getParentNameByStudentId: Return parent IDs for a given student
  *
  * Assumptions:
  *  - authMiddleware ensures req.user contains { userId, role }
@@ -16,15 +18,21 @@
  *  - Class model used to validate classId
  */
 
-const { Student, Class } = require("../models");
-const mongoose = require("mongoose");
+const { Student, Class } = require("../models"); // Import Mongoose models
+const mongoose = require("mongoose");           // Import Mongoose for ObjectId validation
 
 module.exports = {
-  // GET /students
+  /**
+   * GET /students
+   * List all students, with optional filtering by classId and pagination.
+   */
   listStudents: async (req, res) => {
     try {
+      // Extract query params; default to page 1, limit 20
       const { classId, page = 1, limit = 20 } = req.query;
       const filter = {};
+
+      // If classId filter is provided, validate it and add to filter
       if (classId) {
         if (!mongoose.Types.ObjectId.isValid(classId)) {
           return res
@@ -34,14 +42,17 @@ module.exports = {
         filter.classId = classId;
       }
 
+      // Query for students matching filter
       const students = await Student.find(filter)
-        .skip((page - 1) * limit)
-        .limit(parseInt(limit, 10))
-        .populate("classId", "name grade section year")
-        .select("-__v");
+        .skip((page - 1) * limit)                     // Pagination skip
+        .limit(parseInt(limit, 10))                   // Pagination limit
+        .populate("classId", "name grade section year") // Populate class info
+        .select("-__v");                             // Exclude __v field
 
+      // Count total matching documents for pagination info
       const total = await Student.countDocuments(filter);
 
+      // Send back paginated list
       return res.status(200).json({
         success: true,
         data: students,
@@ -59,9 +70,13 @@ module.exports = {
     }
   },
 
-  // POST /students
+  /**
+   * POST /students
+   * Create a new student document in the database.
+   */
   createStudent: async (req, res) => {
     try {
+      // Destructure expected fields from request body
       const {
         studentId,
         name,
@@ -84,7 +99,7 @@ module.exports = {
         });
       }
 
-      // Check for unique studentId and email
+      // Ensure studentId or email uniqueness
       const existing = await Student.findOne({
         $or: [{ studentId }, { email: email?.toLowerCase() }],
       });
@@ -95,26 +110,29 @@ module.exports = {
         });
       }
 
-      // Validate classId
+      // Validate Class ID format
       if (!mongoose.Types.ObjectId.isValid(classId)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid classId." });
       }
+
+      // Ensure the class belongs to the same school
       const classExists = await Class.exists({ _id: classId, schoolId });
       if (!classExists) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Class not found or doesn't belong to this school." });
+        return res.status(404).json({
+          success: false,
+          message: "Class not found or doesn't belong to this school.",
+        });
       }
 
-      // Add schoolId to each parent object
-      const parentsWithSchoolId = parents.map(parent => ({
+      // Attach schoolId to each parent object if provided
+      const parentsWithSchoolId = parents.map((parent) => ({
         ...parent,
-        schoolId
+        schoolId,
       }));
 
-      // Create student document
+      // Create the student document
       const student = await Student.create({
         studentId,
         name,
@@ -129,11 +147,12 @@ module.exports = {
         schoolId,
       });
 
-      // Populate class field before returning
+      // Re-fetch the student to populate class details for response
       const populatedStudent = await Student.findById(student._id)
         .populate("classId", "name grade section year")
         .select("-__v");
 
+      // Return created student
       return res.status(201).json({
         success: true,
         message: "Student created successfully.",
@@ -147,18 +166,23 @@ module.exports = {
     }
   },
 
-  // GET /students/:studentId
+  /**
+   * GET /students/:studentId
+   * Fetch a single student by ID, including populated class details.
+   */
   getStudentById: async (req, res) => {
     try {
       const { studentId } = req.params;
       const { schoolId } = req.query;
 
+      // Validate studentId format
       if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid studentId." });
       }
 
+<<<<<<< HEAD
       const query = { _id: studentId };
       
       // Add schoolId filter if provided
@@ -172,15 +196,21 @@ module.exports = {
       }
 
       const student = await Student.findOne(query)
+=======
+      // Find and populate class info
+      const student = await Student.findById(studentId)
+>>>>>>> 258514aa2fd114c44341ee43a3e9fa9be393d8d0
         .populate("classId", "name grade section year")
         .select("-__v");
 
+      // Handle not found
       if (!student) {
         return res
           .status(404)
           .json({ success: false, message: "Student not found." });
       }
 
+      // Return the student document
       return res.status(200).json({
         success: true,
         data: student,
@@ -193,7 +223,10 @@ module.exports = {
     }
   },
 
-  // PUT /students/:studentId
+  /**
+   * PUT /students/:studentId
+   * Update an existing student's fields (partial updates allowed).
+   */
   updateStudent: async (req, res) => {
     try {
       const { studentId } = req.params;
@@ -209,12 +242,14 @@ module.exports = {
         parents,
       } = req.body;
 
+      // Validate studentId format
       if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid studentId." });
       }
 
+      // Build update object only with provided fields
       const updates = {};
       if (name) updates.name = name;
       if (dob) updates.dob = new Date(dob);
@@ -224,7 +259,7 @@ module.exports = {
       if (feePaid !== undefined) updates.feePaid = feePaid;
       if (Array.isArray(parents)) updates.parents = parents;
 
-      // If email is provided, check uniqueness
+      // Check email uniqueness if email changed
       if (email) {
         const existing = await Student.findOne({
           email: email.toLowerCase(),
@@ -239,7 +274,7 @@ module.exports = {
         updates.email = email.toLowerCase();
       }
 
-      // If classId is provided, validate it
+      // Validate new classId if provided
       if (classId) {
         if (!mongoose.Types.ObjectId.isValid(classId)) {
           return res
@@ -255,6 +290,7 @@ module.exports = {
         updates.classId = classId;
       }
 
+      // Perform the update, return new document, run validators
       const updatedStudent = await Student.findByIdAndUpdate(
         studentId,
         { $set: updates },
@@ -263,12 +299,14 @@ module.exports = {
         .populate("classId", "name grade section year")
         .select("-__v");
 
+      // Handle not found
       if (!updatedStudent) {
         return res
           .status(404)
           .json({ success: false, message: "Student not found." });
       }
 
+      // Return updated student
       return res.status(200).json({
         success: true,
         message: "Student updated successfully.",
@@ -282,25 +320,32 @@ module.exports = {
     }
   },
 
-  // DELETE /students/:studentId
+  /**
+   * DELETE /students/:studentId
+   * Remove a student document by ID.
+   */
   deleteStudent: async (req, res) => {
     try {
       const { studentId } = req.params;
 
+      // Validate studentId
       if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid studentId." });
       }
 
+      // Delete the document
       const deleted = await Student.findByIdAndDelete(studentId);
 
+      // Handle not found
       if (!deleted) {
         return res
           .status(404)
           .json({ success: false, message: "Student not found." });
       }
 
+      // Return success
       return res.status(200).json({
         success: true,
         message: "Student deleted successfully.",
@@ -313,17 +358,22 @@ module.exports = {
     }
   },
 
-  // GET /students/:studentId/progress
+  /**
+   * GET /students/:studentId/progress
+   * Return the academicReport sub-document for a student.
+   */
   getProgress: async (req, res) => {
     try {
       const { studentId } = req.params;
 
+      // Validate studentId format
       if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid studentId." });
       }
 
+      // Fetch only academicReport field
       const student = await Student.findById(studentId).select(
         "academicReport"
       );
@@ -333,6 +383,7 @@ module.exports = {
           .json({ success: false, message: "Student not found." });
       }
 
+      // Return academic report
       return res.status(200).json({
         success: true,
         data: {
@@ -347,17 +398,23 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
-  // GET /student/:parentId
+
+  /**
+   * GET /student/:parentId
+   * Find all students associated with a particular parent ID.
+   */
   getStudentByParentId: async (req, res) => {
     try {
       const { parentId } = req.params;
 
+      // Validate parentId
       if (!mongoose.Types.ObjectId.isValid(parentId)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid parentId." });
       }
 
+      // Query students whose parents array contains the parentId
       const students = await Student.find({ parents: parentId })
         .populate("classId", "name grade section year")
         .select("-__v");
@@ -365,18 +422,61 @@ module.exports = {
       if (students.length === 0) {
         return res
           .status(404)
-          .json({ success: false, message: "No students found for this parent." });
+          .json({
+            success: false,
+            message: "No students found for this parent.",
+          });
       }
 
-      return res.status(200).json({
-        success: true,
-        data: students,
-      });
+      // Return matching students
+      return res.status(200).json({ success: true, data: students });
     } catch (err) {
       console.error("studentController.getStudentByParentId error:", err);
       return res
         .status(500)
         .json({ success: false, message: "Internal server error." });
     }
-  }
+  },
+
+  /**
+   * GET /students/:studentId/parents
+   * Return only the parent ObjectIds for a given student.
+   */
+  getParentNameByStudentId: async (req, res) => {
+    try {
+      const { studentId } = req.params;
+
+      // Validate studentId
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid studentId." });
+      }
+
+      // Fetch only parents field (raw ObjectId array)
+      const student = await Student.findById(studentId).select("parents");
+
+      // Handle not found
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Student not found.",
+        });
+      }
+
+      // parentIds is an array of ObjectId
+      const parentIds = student.parents;
+
+      // Return parent IDs
+      return res.status(200).json({
+        success: true,
+        data: { studentId, parentIds },
+      });
+    } catch (err) {
+      console.error("studentController.getParentNameByStudentId error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  },
 };

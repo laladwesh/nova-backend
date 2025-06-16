@@ -155,7 +155,11 @@ function isParent(req, res, next) {
   }
   next();
 }
-
+/**
+ * 6. superAdminAuth
+ *    - Checks for a secret key in req.body.secretKey
+ *    - If it doesn't match the environment variable, returns 403 Forbidden
+ */
 function superAdminAuth(req, res, next) {
   if (req.body.secretKey !== process.env.SUPER_ADMIN_SECRET_KEY) {
     return res
