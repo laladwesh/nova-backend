@@ -8,6 +8,16 @@ const attendanceController = require("../controllers/attendanceController");
 /**
  * Helper inline to allow Teacher OR Admin
  */
+
+function canViewOwnAttendance(req, res, next) {
+  const { _id, role } = req.user;
+  const { studentId } = req.params;
+  if (role === "school_admin" || (role === "student" && _id.toString() === studentId)) {
+    return next();
+  }
+  return res.status(403).json({ success: false, message: "Not authorized." });
+}
+
 function isTeacherOrAdmin(req, res, next) {
   const role = req.user.role;
   if (role === "teacher" || role === "school_admin") {
@@ -32,6 +42,16 @@ router.get(
   isTeacherOrAdmin,
   attendanceController.listAttendance
 );
+
+
+router.get(
+  "/student/:studentId",
+  authenticate,
+  canViewOwnAttendance,
+  attendanceController.getAttendanceByStudent
+);
+
+
 
 /**
  * 2. POST '/' – mark attendance for a class on a given date

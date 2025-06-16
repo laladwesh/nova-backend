@@ -411,4 +411,48 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
+  getAttendanceByStudent : async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ success: false, message: "Invalid studentId." });
+    }
+
+    // Fetch all daily records where this student appears
+    const records = await AttendanceRecord.find({ "entries.studentId": studentId })
+      .sort({ date: 1 })
+      .lean();
+
+    // if (records.length === 0) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "No attendance records found for this student."
+    //   });
+    // }
+
+    // Build day-by-day array
+    const dayByDay = records.map(rec => {
+      const entry = rec.entries.find(e => e.studentId.toString() === studentId);
+      return {
+        date:   rec.date.toISOString().slice(0,10),  // "YYYY-MM-DD"
+        status: entry.status
+      };
+    });
+
+    // Totals
+    const presentCount = dayByDay.filter(r => r.status === "present").length;
+    const absentCount  = dayByDay.filter(r => r.status === "absent").length;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        records: dayByDay,
+        summary: { present: presentCount, absent: absentCount }
+      }
+    });
+  } catch (err) {
+    console.error("attendanceController.getAttendanceByStudent error:", err);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+},
 };
