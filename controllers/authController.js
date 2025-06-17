@@ -471,7 +471,7 @@ exports.forgotPassword = async (req, res) => {
     });
 
     // Construct reset URL (e.g., FRONTEND_URL + '/reset-password/' + rawToken)
-    const resetUrl = `${process.env.BACKEND_URL}/auth/reset-password/${rawToken}`;
+    const resetUrl = `${process.env.BACKEND_URL}auth/reset-password/${rawToken}`;
     // Send email (implement sendEmail utility)
     const emailSubject = "Password Reset Request";
     const emailBody = `
