@@ -13,12 +13,13 @@ const analyticsController = require("../controllers/analyticsController");
  * 1. Attendance analytics
  *    - Only teachers or admins should fetch attendance analytics.
  */
-router.get(
-  "/attendance",
-  authenticate,
-  isTeacher,
-  analyticsController.getAttendanceAnalytics
-);
+// router.get(
+//   "/attendance",
+//   authenticate,
+//   isTeacher,
+//   isAdmin,
+//   analyticsController.getAttendanceAnalytics
+// );
 // If you also want admins to access /attendance, chain both:
 router.get(
   "/attendance",

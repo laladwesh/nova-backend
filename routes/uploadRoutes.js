@@ -35,6 +35,6 @@ function isTeacherOrAdmin(req, res, next) {
  *   – Only Teacher or Admin may upload.
  */
 
-router.post("/", upload.single("image"), authenticate, isTeacherOrAdmin, uploadController.uploadResource);
+router.post("/", upload.any(), authenticate, uploadController.uploadResource);
 
 module.exports = router;
