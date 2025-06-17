@@ -580,7 +580,7 @@ exports.renderResetPasswordForm = (req, res) => {
           align-items: center;
           justify-content: center;
           height: 100vh;
-          background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+          background: linear-gradient(135deg,rgb(0, 0, 0) 0%, #rgb(255, 255, 255)00%);
           font-family: 'Poppins', sans-serif;
         }
         .container {
@@ -607,7 +607,7 @@ exports.renderResetPasswordForm = (req, res) => {
           font-size: 0.9rem;
         }
         input[type="password"] {
-          width: 100%;
+          width: 92%;
           padding: 0.75rem;
           border: 1px solid #CCCCCC;
           border-radius: 4px;
@@ -650,7 +650,7 @@ exports.renderResetPasswordForm = (req, res) => {
     </head>
     <body>
       <div class="container">
-        <h1>Reset Your Password</h1>
+        <h1>Welcome Pixel Grid User Reset Your Password</h1>
         <form method="POST" action="/auth/reset-password">
           <input type="hidden" name="token" value="${rawToken}" />
           <div class="form-group">
