@@ -16,7 +16,7 @@ const analyticsController = require("../controllers/analyticsController");
 router.get(
   "/attendance",
   authenticate,
-  isTeacher, // teacher role OR…
+  isTeacher,
   analyticsController.getAttendanceAnalytics
 );
 // If you also want admins to access /attendance, chain both:

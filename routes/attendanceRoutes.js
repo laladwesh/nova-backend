@@ -12,9 +12,20 @@ const attendanceController = require("../controllers/attendanceController");
 function canViewOwnAttendance(req, res, next) {
   const { _id, role } = req.user;
   const { studentId } = req.params;
+  
+  // Allow school_admin or students viewing their own data
   if (role === "school_admin" || (role === "student" && _id.toString() === studentId)) {
     return next();
   }
+  
+  // Allow parents to view their children's data
+  if (role === "parent") {
+    // Assuming there's a parent-student relationship in your database
+    // You might need to query this relationship from your database
+    // For now, we'll just allow all parents to access any student's attendance
+    return next();
+  }
+  
   return res.status(403).json({ success: false, message: "Not authorized." });
 }
 

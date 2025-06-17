@@ -2,6 +2,8 @@
 
 // ...existing code...
 
+require('dotenv').config();
+
 // Initialize Firebase for FCM notifications
 const admin = require('firebase-admin');
 try {

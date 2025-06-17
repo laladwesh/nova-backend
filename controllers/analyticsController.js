@@ -38,7 +38,7 @@ module.exports = {
           .status(400)
           .json({ success: false, message: "Valid classId is required." });
       }
-      const match = { classId: mongoose.Types.ObjectId(classId) };
+      const match = { classId: new mongoose.Types.ObjectId(classId) };
       if (startDate) {
         match.date = { ...match.date, $gte: new Date(startDate) };
       }
@@ -86,37 +86,34 @@ module.exports = {
     }
   },
 
-  // GET /analytics/grades?classId=&examType=&subject=
+  // GET /analytics/grades?classId=&subject=
   getGradesAnalytics: async (req, res) => {
     try {
-      const { classId, examType, subject } = req.query;
+      const { classId, subject } = req.query;
       if (!classId || !mongoose.Types.ObjectId.isValid(classId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Valid classId is required." });
+        return res.status(400).json({
+          success: false,
+          message: "Valid classId is required",
+        });
       }
-      const match = { examType };
-      if (subject) match.subject = subject;
 
-      // Lookup students in class
-      const studentsInClass = await Student.find({
-        classId: mongoose.Types.ObjectId(classId),
-      }).select("_id");
-      const studentIds = studentsInClass.map((s) => s._id);
+      // Match by classId and subject if provided
+      const match = { classId: new mongoose.Types.ObjectId(classId) };
+      if (subject) match.subjectId = subject;
 
-      match.studentId = { $in: studentIds };
-
-      // Aggregate marks
+      // Aggregate marks using the structure with entries array
       const pipeline = [
         { $match: match },
+        // Unwind the entries array to work with individual student results
+        { $unwind: "$entries" },
         {
           $group: {
             _id: null,
-            avgMarks: { $avg: "$marksObtained" },
-            maxMarks: { $max: "$marksObtained" },
-            minMarks: { $min: "$marksObtained" },
+            avgMarks: { $avg: "$entries.percentage" },
+            maxMarks: { $max: "$entries.percentage" },
+            minMarks: { $min: "$entries.percentage" },
             count: { $sum: 1 },
-            allMarks: { $push: "$marksObtained" },
+            allMarks: { $push: "$entries.percentage" },
           },
         },
         {
@@ -129,7 +126,7 @@ module.exports = {
             median: {
               $let: {
                 vars: {
-                  sorted: { $sortArray: { input: "$allMarks" } },
+                  sorted: { $sortArray: { input: "$allMarks", sortBy: 1 } },
                   count: "$count",
                 },
                 in: {
@@ -165,6 +162,7 @@ module.exports = {
         },
       ];
 
+      // Update the collection name if needed - using your actual model
       const [stats] = await Grade.aggregate(pipeline);
       return res.status(200).json({ success: true, data: stats || {} });
     } catch (err) {
@@ -178,53 +176,55 @@ module.exports = {
   // GET /analytics/teacher-performance?teacherId=&period=month|quarter|year
   getTeacherPerformance: async (req, res) => {
     try {
-      const { teacherId, period } = req.query;
+      const { teacherId, period = "month" } = req.query; // Set default period to 'month'
+
       if (!teacherId || !mongoose.Types.ObjectId.isValid(teacherId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Valid teacherId is required." });
+        return res.status(400).json({
+          success: false,
+          message: "Valid teacherId is required",
+        });
       }
 
-      // Find teacher and their classes
-      const teacher = await Teacher.findById(teacherId).select("classes");
-      if (!teacher) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Teacher not found." });
-      }
-
-      // Determine date cutoff based on period
-      let dateCutoff = new Date(0);
+      // Calculate date cutoff based on period (default to 1 month if not specified)
       const now = new Date();
-      if (period === "month") {
-        dateCutoff = new Date(
-          now.getFullYear(),
-          now.getMonth() - 1,
-          now.getDate()
-        );
-      } else if (period === "quarter") {
-        dateCutoff = new Date(
-          now.getFullYear(),
-          now.getMonth() - 3,
-          now.getDate()
-        );
-      } else if (period === "year") {
-        dateCutoff = new Date(
-          now.getFullYear() - 1,
-          now.getMonth(),
-          now.getDate()
-        );
+      let dateCutoff = new Date();
+      switch (period) {
+        case "quarter":
+          dateCutoff.setMonth(now.getMonth() - 3);
+          break;
+        case "year":
+          dateCutoff.setFullYear(now.getFullYear() - 1);
+          break;
+        case "month":
+        default:
+          dateCutoff.setMonth(now.getMonth() - 1);
+          break;
       }
 
-      // 1. Attendance: average attendancePct for each class
-      const attendancePipeline = [
+      // First retrieve the teacher to make sure they exist
+      const teacherData = await Teacher.findById(teacherId);
+
+      if (!teacherData) {
+        return res.status(404).json({
+          success: false,
+          message: "Teacher not found",
+        });
+      }
+
+      // Now use teacherData instead of undefined 'teacher' variable
+      const classIds = teacherData.classes || [];
+
+      // Query attendance data for teacher's classes
+      const attendanceData = await AttendanceRecord.aggregate([
         {
           $match: {
-            classId: { $in: teacher.classes },
+            classId: { $in: classIds.map((id) => new mongoose.Types.ObjectId(id)) },
             date: { $gte: dateCutoff },
           },
         },
-        { $unwind: "$entries" },
+        {
+          $unwind: "$entries",
+        },
         {
           $group: {
             _id: { classId: "$classId", date: "$date" },
@@ -242,16 +242,17 @@ module.exports = {
             },
           },
         },
-      ];
-      const attendanceStats = await AttendanceRecord.aggregate(
-        attendancePipeline
-      );
+      ]);
+      const attendanceStats = attendanceData.map((item) => ({
+        classId: item._id,
+        avgAttendancePct: Math.round(item.avgAttendance),
+      }));
 
-      // 2. Grades: average grade given by this teacher
-      const gradePipeline = [
+      // Query grades data
+      const gradesData = await Grade.aggregate([
         {
           $match: {
-            teacherId: mongoose.Types.ObjectId(teacherId),
+            teacherId: new mongoose.Types.ObjectId(teacherId),
             gradedAt: { $gte: dateCutoff },
           },
         },
@@ -262,20 +263,19 @@ module.exports = {
             count: { $sum: 1 },
           },
         },
-      ];
-      const [gradeStats] = await Grade.aggregate(gradePipeline);
+      ]);
+      const [gradeStats] = gradesData;
 
       // 3. Classes taught count
-      const classCount = teacher.classes.length;
+      const classCount = classIds.length;
 
       return res.status(200).json({
         success: true,
         data: {
+          teacherName: teacherData.name,
+          period: period,
           classCount,
-          attendanceByClass: attendanceStats.map((item) => ({
-            classId: item._id,
-            avgAttendancePct: Math.round(item.avgAttendance),
-          })),
+          attendanceByClass: attendanceStats,
           averageGradeGiven: gradeStats ? Math.round(gradeStats.avgMarks) : 0,
           totalGradesGiven: gradeStats ? gradeStats.count : 0,
         },
@@ -520,7 +520,7 @@ module.exports = {
 
       // 1. Get student's own score
       const studentGrade = await Grade.findOne({
-        studentId: mongoose.Types.ObjectId(studentId),
+        studentId: new mongoose.Types.ObjectId(studentId),
         subject,
         examType,
       }).select("marksObtained");

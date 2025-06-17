@@ -257,27 +257,27 @@ router.patch('/token/:id/status', async (req, res) => {
   }
 });
 
-// Delete FCM token
-router.delete('/token/:id', async (req, res) => {
+// Delete FCM token by userId
+router.delete('/token/user/:userId', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { userId } = req.params;
 
-    const token = await FCMToken.findByIdAndDelete(id);
+    const result = await FCMToken.deleteMany({ userId });
 
-    if (!token) {
+    if (result.deletedCount === 0) {
       return res.status(404).json({
         success: false,
-        message: 'FCM token not found'
+        message: 'No FCM tokens found for this user'
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'FCM token deleted successfully'
+      message: `${result.deletedCount} FCM token(s) deleted successfully`
     });
 
   } catch (error) {
-    console.error('Error deleting FCM token:', error);
+    console.error('Error deleting FCM tokens:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
