@@ -49,6 +49,13 @@ router.post(
   authController.refresh         // Handler validates refresh token and issues new access token
 );
 
+
+
+router.get(
+  "/verify-email/:token",
+  authController.renderResetPasswordForm     // Handler verifies email using token from signup or reset
+);
+
 /**
  * POST '/forgot-password'
  *  - Initiate password reset flow for a user
