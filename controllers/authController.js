@@ -559,33 +559,112 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// controllers/authController.js
+
 exports.renderResetPasswordForm = (req, res) => {
   const rawToken = req.params.token;
-  // You might optionally verify that a hashed version exists and isn't expired:
-  // const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
-  // const resetRecord = await PasswordResetToken.findOne({ token: hashedToken });
-  //
-  // If invalid, show an error page.
-
-  // Serve a simple HTML page with a form:
   res.send(`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
       <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1"/>
       <title>Reset Your Password</title>
+      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+          font-family: 'Poppins', sans-serif;
+        }
+        .container {
+          background: #ffffff;
+          padding: 2rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          max-width: 360px;
+          width: 100%;
+        }
+        h1 {
+          margin: 0 0 1.5rem;
+          font-size: 1.5rem;
+          text-align: center;
+          color: #333333;
+        }
+        .form-group {
+          margin-bottom: 1.25rem;
+        }
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: #555555;
+          font-size: 0.9rem;
+        }
+        input[type="password"] {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #CCCCCC;
+          border-radius: 4px;
+          font-size: 1rem;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="password"]:focus {
+          outline: none;
+          border-color: #6B73FF;
+          box-shadow: 0 0 0 3px rgba(107,115,255,0.2);
+        }
+        .btn {
+          width: 100%;
+          padding: 0.75rem;
+          background-color: #6B73FF;
+          color: #ffffff;
+          border: none;
+          border-radius: 4px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        .btn:hover {
+          background-color: #5A62E0;
+        }
+        .footer {
+          margin-top: 1rem;
+          text-align: center;
+          font-size: 0.85rem;
+        }
+        .footer a {
+          color: #6B73FF;
+          text-decoration: none;
+        }
+        .footer a:hover {
+          text-decoration: underline;
+        }
+      </style>
     </head>
     <body>
-      <h1>Reset Your Password</h1>
-      <form method="POST" action="/auth/reset-password">
-        <input type="hidden" name="token" value="${rawToken}" />
-        <div>
-          <label>New Password:</label>
-          <input type="password" name="newPassword" required />
-        </div>
-        <button type="submit">Reset Password</button>
-      </form>
+      <div class="container">
+        <h1>Reset Your Password</h1>
+        <form method="POST" action="/auth/reset-password">
+          <input type="hidden" name="token" value="${rawToken}" />
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <input id="newPassword" type="password" name="newPassword" placeholder="••••••••" required />
+          </div>
+          <button type="submit" class="btn">Reset Password</button>
+        </form>
+        // <div class="footer">
+        //   <p><a href="/login">Back to Login</a></p>
+        // </div>
+      </div>
     </body>
     </html>
   `);
 };
+
