@@ -52,7 +52,7 @@ router.post(
 
 
 router.get(
-  "/verify-email/:token",
+  "/reset-password/:token",
   authController.renderResetPasswordForm     // Handler verifies email using token from signup or reset
 );
 
