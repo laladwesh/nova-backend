@@ -659,9 +659,6 @@ exports.renderResetPasswordForm = (req, res) => {
           </div>
           <button type="submit" class="btn">Reset Password</button>
         </form>
-        // <div class="footer">
-        //   <p><a href="/login">Back to Login</a></p>
-        // </div>
       </div>
     </body>
     </html>
