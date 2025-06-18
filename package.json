@@ -9,6 +9,7 @@
     "build": "cd client && npm run build",
     "start": "node index.js"
   },
+  "postinstall": "npm install --prefix client",
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -31,7 +32,6 @@
     "nodemailer": "^7.0.3",
     "streamifier": "^0.1.1"
   },
-  "postinstall": "npm install --prefix client",
   "devDependencies": {
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
