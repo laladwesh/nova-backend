@@ -1,27 +1,15 @@
-// client/src/App.js
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import './App.css'
+import React from 'react'
+import { Route, Routes } from 'react-router-dom'
+import PixelGridPage from './components/PixelGridPage'
 
-function App() {
-  const [data, setData] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    axios
-      .get('/api')          // <-- relative, hits Express via CRA proxy
-      .then(res => setData(res.data))
-      .catch(err => setError(err))
-  }, [])
-
-  if (error)   return <div>Error: {error.message}</div>
-  if (!data)   return <p>Loading…</p>
-
+const App = () => {
   return (
-    <div className="App">
-      <h1>Got from the API:</h1>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-    </div>
+   <>
+   <Routes>
+    <Route path="/" element={<h1 className='text-center bg-fuchsia-800'>Home Page</h1>} />
+    <Route path="/pixelgrid" element={<PixelGridPage/>} />
+   </Routes>
+   </>
   )
 }
 
