@@ -5,6 +5,7 @@ import SuperAdminPage from "./pages/SuperAdminPage";
 import SchoolAdminPage from "./pages/SchoolAdminPage";
 import { SuperAdminRoute, SchoolAdminRoute } from "./routes/ProtectedRoute";
 import Homepage from "./pages/HomePage.js";
+import { SchoolDetailPage } from "./pages/SchoolDetailPage.jsx";
 function PublicRoute({ children }) {
   const token = localStorage.getItem("accessToken");
   const role = localStorage.getItem("role");
@@ -41,6 +42,14 @@ const App = () => {
           }
         />
 
+<Route
+      path="/school/:id"
+      element={
+        <SuperAdminRoute>
+          <SchoolDetailPage />
+        </SuperAdminRoute>
+      }
+    />
         {/* Only accessible to users with role === "super_admin" */}
         <Route
           path="/superadmin"
