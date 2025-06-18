@@ -25,6 +25,10 @@ function canViewOrEditTeacher(req, res, next) {
     return next();
   }
 
+  if (role === "super_admin") {
+    return next(); // Super Admin can access any teacher
+    
+  }
   // A teacher may access/modify their own record only
   if (role === "teacher" && _id.toString() === teacherId) {
     return next();
