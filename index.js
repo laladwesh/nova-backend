@@ -53,7 +53,7 @@ api.use('/metadata', require('./routes/metadataRoutes'));
 api.use('/upload', require('./routes/uploadRoutes'));
 api.use('/fcm', require('./routes/fcmRoutes'));
 api.use('/story', require('./routes/storyRoutes'));
-
+api.use('/superadmin', require('./routes/superAdminRoutes'));
 // Fallback for any undefined /api route
 api.use((req, res) => {
   res.status(404).json({ message: 'API route not found' });

@@ -1,22 +1,68 @@
-import React from 'react';
-import { Route, Routes } from 'react-router-dom';
-import PixelGridPage from './components/PixelGridPage';
-import HomePage from './pages/HomePage';
-import Navbar from './components/navbar';
-import './App.css';
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import PixelGridPage from "./components/PixelGridPage";
+import SuperAdminPage from "./components/SuperAdminPage";
+import SchoolAdminPage from "./components/SchoolAdminPage";
+import { SuperAdminRoute, SchoolAdminRoute } from "./routes/ProtectedRoute";
+import Homepage from "./pages/HomePage.js";
+function PublicRoute({ children }) {
+  const token = localStorage.getItem("accessToken");
+  const role = localStorage.getItem("role");
+
+  if (token) {
+    // already logged in → redirect by role
+    if (role === "super_admin") {
+      return <Navigate to="/superadmin" replace />;
+    }
+    if (role === "school_admin") {
+      return <Navigate to="/schooladmin" replace />;
+    }
+    // fallback
+    return <Navigate to="/" replace />;
+  }
+
+  // not logged in → render the login page
+  return children;
+}
 
 const App = () => {
   return (
-   <div className="App">
-     <div className="app-container">
-       <Navbar />
-       <Routes>
-        <Route path="/" element={<HomePage />} /> 
-        <Route path="/pixelgrid" element={<PixelGridPage/>} />
-       </Routes>
-     </div>
-   </div>
-  )
-}
+    <>
+      <Routes>
+        <Route path="/" element={<Homepage />} />
+
+        {/* Public login page, blocked if already authenticated */}
+        <Route
+          path="/pixelgrid"
+          element={
+            <PublicRoute>
+              <PixelGridPage />
+            </PublicRoute>
+          }
+        />
+
+        {/* Only accessible to users with role === "super_admin" */}
+        <Route
+          path="/superadmin"
+          element={
+            <SuperAdminRoute>
+              <SuperAdminPage />
+            </SuperAdminRoute>
+          }
+        />
+
+        {/* Only accessible to users with role === "school_admin" */}
+        <Route
+          path="/schooladmin"
+          element={
+            <SchoolAdminRoute>
+              <SchoolAdminPage />
+            </SchoolAdminRoute>
+          }
+        />
+      </Routes>
+    </>
+  );
+};
 
 export default App;

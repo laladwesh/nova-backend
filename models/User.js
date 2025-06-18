@@ -38,13 +38,12 @@ const UserSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["student", "teacher", "school_admin", "parent"],
+      enum: ["student", "teacher", "school_admin", "parent" , "super_admin"],
       default: "student",
     },
     schoolId: {
       type: Schema.Types.ObjectId,
       ref: "School",
-      required: true,
     },
     imageUrl: {
       type: String,

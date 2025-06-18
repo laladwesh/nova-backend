@@ -7,11 +7,11 @@ import ImplementationSection from '../components/HomePage/ImplementationSection'
 import CtaSection from '../components/HomePage/CtaSection';
 import UseCasesSection from '../components/HomePage/UseCasesSection';
 import ContactSection from '../components/HomePage/ContactSection';
-
+import Navbar from '../components/navbar';
 const HomePage = () => {
   return (
     <div className="min-h-screen text-white relative">
-    
+      <Navbar/>
         <HeroSection />
         <ProblemSection />
         <SolutionSection />

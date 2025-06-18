@@ -1,5 +1,16 @@
 // middleware/authMiddleware.js
 
+
+ function isSuperAdminAuth(req, res, next) {
+  if (req.user.role !== 'super_admin') {
+    return res
+      .status(403)
+      .json({ success: false, message: 'Super admin role required.' });
+  }
+  next();
+}
+
+
 const jwt = require("jsonwebtoken");
 const { User } = require("../models"); // assumes models/index.js exports User
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here";
@@ -175,5 +186,6 @@ module.exports = {
   isTeacher,
   isStudent,
   isParent,
-  superAdminAuth
+  superAdminAuth,
+  isSuperAdminAuth
 };
