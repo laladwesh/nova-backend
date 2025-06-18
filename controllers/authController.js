@@ -158,89 +158,88 @@ exports.signup = async (req, res) => {
       );
     }
 
-// inside exports.signup, replace your existing `if (role === "student") { … }` with:
+    // inside exports.signup, replace your existing `if (role === "student") { … }` with:
 
-if (role === "student") {
-  // 1) Create the Student
-  const studentDoc = await Student.create({
-    _id:       user._id,
-    studentId: studentId.trim(),
-    name:      name.trim(),
-    classId,
-    email:     user.email,
-    schoolId:  schoolRecord._id,
-  });
-
-  // 2) Validate parentInputs items
-  if (!Array.isArray(parentInputs) || parentInputs.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: "You must supply a non-empty parents array.",
-    });
-  }
-  for (const [i, p] of parentInputs.entries()) {
-    if (!p.name || !p.email || !p.password) {
-      return res.status(400).json({
-        success: false,
-        message: `Each parent must include name, email, and password (error in parent index ${i}).`,
+    if (role === "student") {
+      // 1) Create the Student
+      const studentDoc = await Student.create({
+        _id: user._id,
+        studentId: studentId.trim(),
+        name: name.trim(),
+        classId,
+        email: user.email,
+        schoolId: schoolRecord._id,
       });
+
+      // 2) Validate parentInputs items
+      if (!Array.isArray(parentInputs) || parentInputs.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "You must supply a non-empty parents array.",
+        });
+      }
+      for (const [i, p] of parentInputs.entries()) {
+        if (!p.name || !p.email || !p.password) {
+          return res.status(400).json({
+            success: false,
+            message: `Each parent must include name, email, and password (error in parent index ${i}).`,
+          });
+        }
+      }
+
+      // 3) Create Parent Users & Parent docs
+      const createdParentIds = [];
+      for (const p of parentInputs) {
+        // 3a) Hash parent password
+        const saltP = await bcrypt.genSalt(12);
+        const hashedParentPwd = await bcrypt.hash(p.password.trim(), saltP);
+
+        // 3b) Create User record for parent
+        const parentUser = await User.create({
+          name: p.name.trim(),
+          email: p.email.toLowerCase().trim(),
+          password: hashedParentPwd,
+          role: "parent",
+          schoolId: schoolRecord._id,
+        });
+
+        // 3c) Create Parent doc with same _id
+        const parentDoc = await Parent.create({
+          _id: parentUser._id,
+          name: p.name.trim(),
+          email: p.email.toLowerCase().trim(),
+          phone: p.phone?.trim(),
+          schoolId: schoolRecord._id,
+          students: [studentDoc._id],
+        });
+
+        // 3d) Push into School.parents
+
+        createdParentIds.push(parentUser._id);
+      }
+
+await School.findByIdAndUpdate(
+  schoolRecord._id,
+  { $addToSet: { students: studentDoc._id } },
+  { new: true }
+);
+
+
+      // 4) Link Parents into Student.parents array
+      studentDoc.parents = createdParentIds;
+      await studentDoc.save();
+
+      // 5) Link the Student into its Class
+      await Class.findByIdAndUpdate(
+        classId,
+        { $push: { students: studentDoc._id } },
+        { new: true }
+      );
     }
-  }
-
-  // 3) Create Parent Users & Parent docs
-  const createdParentIds = [];
-  for (const p of parentInputs) {
-    // 3a) Hash parent password
-    const saltP = await bcrypt.genSalt(12);
-    const hashedParentPwd = await bcrypt.hash(p.password.trim(), saltP);
-
-    // 3b) Create User record for parent
-    const parentUser = await User.create({
-      name:     p.name.trim(),
-      email:    p.email.toLowerCase().trim(),
-      password: hashedParentPwd,
-      role:     "parent",
-      schoolId: schoolRecord._id,
-    });
-
-    // 3c) Create Parent doc with same _id
-    const parentDoc = await Parent.create({
-      _id:      parentUser._id,
-      name:     p.name.trim(),
-      email:    p.email.toLowerCase().trim(),
-      phone:    p.phone?.trim(),
-      schoolId: schoolRecord._id,
-      students: [studentDoc._id],
-    });
-
-    // 3d) Push into School.parents
-    await School.findByIdAndUpdate(
-      schoolRecord._id,
-      { $push: { parents: parentUser._id } },
-      { new: true }
-    );
-
-    createdParentIds.push(parentUser._id);
-  }
-
-  // 4) Link Parents into Student.parents array
-  studentDoc.parents = createdParentIds;
-  await studentDoc.save();
-
-  // 5) Link the Student into its Class
-  await Class.findByIdAndUpdate(
-    classId,
-    { $push: { students: studentDoc._id } },
-    { new: true }
-  );
-}
-
-
-
 
     if (role === "teacher") {
       const teacherDoc = await Teacher.create({
-        _id:user._id, // Use the same _id as User
+        _id: user._id, // Use the same _id as User
         teacherId: crypto.randomBytes(4).toString("hex"),
         name: name.trim(),
         email: user.email,
@@ -252,7 +251,6 @@ if (role === "student") {
         { new: true }
       );
     }
-
 
     // 8) Generate tokens
     const accessToken = generateAccessToken(user);
@@ -476,7 +474,7 @@ exports.forgotPassword = async (req, res) => {
     const resetUrl = `${process.env.BACKEND_URL}api/auth/reset-password/${rawToken}`;
     // Send email (implement sendEmail utility)
     const emailSubject = "Password Reset Request";
- const emailBody = `
+    const emailBody = `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -507,7 +505,9 @@ exports.forgotPassword = async (req, res) => {
             </tr>
             <tr>
               <td style="padding:30px 40px; color:#51545E; font-size:16px; line-height:1.5;">
-                <p style="margin-top:0;">Hello <strong>${user.name}</strong>,</p>
+                <p style="margin-top:0;">Hello <strong>${
+                  user.name
+                }</strong>,</p>
                 <p>
                   You requested a password reset. Click the button below to choose a new
                   password. This link will expire in <strong>${expiresInMinutes} minutes</strong>.
@@ -738,4 +738,3 @@ exports.renderResetPasswordForm = (req, res) => {
     </html>
   `);
 };
-
