@@ -1,8 +1,8 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import PixelGridPage from "./components/PixelGridPage";
-import SuperAdminPage from "./components/SuperAdminPage";
-import SchoolAdminPage from "./components/SchoolAdminPage";
+import PixelGridPage from "./pages/PixelGridPage";
+import SuperAdminPage from "./pages/SuperAdminPage";
+import SchoolAdminPage from "./pages/SchoolAdminPage";
 import { SuperAdminRoute, SchoolAdminRoute } from "./routes/ProtectedRoute";
 import Homepage from "./pages/HomePage.js";
 function PublicRoute({ children }) {
