@@ -21,6 +21,21 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+      default: "other",
+    },
+    dob: {
+      type: Date, 
+      validate: {
+        validator: function (value) {
+          // Check if the date is in the past
+          return value < new Date();
+        },
+        message: "Date of birth must be in the past.",
+      },
+    },
     role: {
       type: String,
       enum: ["student", "teacher", "school_admin", "parent"],

@@ -73,6 +73,8 @@ exports.signup = async (req, res) => {
       email,
       password,
       role,
+      gender,
+      dob,
       studentId,
       classId,
       schoolId,

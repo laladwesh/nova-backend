@@ -34,16 +34,6 @@ router.post(
   notificationController.createNotification
 );
 
-/**
- * 2a. POST '/push' – send push notification directly
- *     – Only Admin can send.
- */
-router.post(
-  "/push",
-  authenticate,
-  isAdmin,
-  notificationController.sendPushNotification
-);
 
 /**
  * 3. DELETE '/:notificationId' – delete a school‐wide notification
@@ -183,28 +173,6 @@ router.post(
   notificationController.createParentNotification
 );
 
-/**
- * 7. PUT '/parent/:parentId/preferences' – update a parent's notification preferences
- *    – Only the parent themself can update their own preferences.
- */
-router.put(
-  "/parent/:parentId/preferences",
-  authenticate,
-  (req, res, next) => {
-    const { parentId } = req.params;
-    const { _id, role } = req.user;
-    if (_id.toString() === parentId && role === "parent") {
-      return next();
-    }
-    return res
-      .status(403)
-      .json({
-        success: false,
-        message: "Only that parent may update preferences.",
-      });
-  },
-  notificationController.updateParentPreferences
-);
 
 
 

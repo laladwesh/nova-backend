@@ -187,7 +187,7 @@ const NotificationSchema = new Schema(
   {
     type: {
       type: String,
-      enum: ["Student", "Teacher", "Announcement"],
+      enum: ["Student", "Teacher", "Announcement", "Class", "Parent"],
       required: true,
     },
     message: { type: String, required: true },
@@ -201,11 +201,12 @@ const NotificationSchema = new Schema(
     studentId: { type: Schema.Types.ObjectId, ref: "Student" },
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher" },
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true }
   },
   { timestamps: true }
 );
 
-const Notification = model("Notification", NotificationSchema);
+const Notification = model("Notification", NotificationSchema,);
 
 // ────────────────────────────────────────────────────────────────────────────────
 // 9. ACADEMIC CALENDAR

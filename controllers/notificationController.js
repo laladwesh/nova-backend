@@ -66,8 +66,16 @@ module.exports = {
   // POST /notifications
   createNotification: async (req, res) => {
     try {
-      const { type, message, studentId, teacherId, classId, parentId, audience, scheduleAt, schoolId } =
-        req.body;
+      const { 
+        type, 
+        message, 
+        studentId, 
+        teacherId, 
+        classId, 
+        parentId, 
+        audience, 
+        schoolId
+      } = req.body;
 
       if (!type || !message) {
         return res.status(400).json({
@@ -94,60 +102,41 @@ module.exports = {
         type, 
         message, 
         schoolId,
-        createdBy: req.user._id // Store the ID of the user creating the notification
+        createdBy: req.user._id      
       };
 
       if (type === "Student") {
-        if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
-          return res
-            .status(400)
-            .json({ success: false, message: "Valid studentId is required." });
+        // Add student-specific fields
+        if (studentId) {
+          notificationData.studentId = studentId;
         }
-        notificationData.studentId = studentId;
       } else if (type === "Teacher") {
-        if (!teacherId || !mongoose.Types.ObjectId.isValid(teacherId)) {
-          return res
-            .status(400)
-            .json({ success: false, message: "Valid teacherId is required." });
+        // Add teacher-specific fields
+        if (teacherId) {
+          notificationData.teacherId = teacherId;
         }
-        notificationData.teacherId = teacherId;
-      } else if (type === "Announcement") {
-        if (!Array.isArray(audience) || audience.length === 0) {
-          return res.status(400).json({
-            success: false,
-            message:
-              'audience array is required for announcements (e.g. ["all_students"]).',
-          });
-        }
-        notificationData.audience = audience;
       } else if (type === "Class") {
-        if (!classId || !mongoose.Types.ObjectId.isValid(classId)) {
-          return res
-            .status(400)
-            .json({ success: false, message: "Valid classId is required." });
+        // Add class-specific fields
+        if (classId) {
+          notificationData.classId = classId;
         }
-        notificationData.classId = classId;
       } else if (type === "Parent") {
-        if (!parentId || !mongoose.Types.ObjectId.isValid(parentId)) {
-          return res
-            .status(400)
-            .json({ success: false, message: "Valid parentId is required." });
+        // Add parent-specific fields
+        if (parentId) {
+          notificationData.parentId = parentId;
         }
-        notificationData.parentId = parentId;
       }
 
-      if (scheduleAt) {
-        notificationData.scheduleAt = new Date(scheduleAt);
-      } else {
-        notificationData.issuedAt = new Date();
+      // Add audience if provided
+      if (audience && Array.isArray(audience)) {
+        notificationData.audience = audience;
       }
 
+      // Create notification
       const newNotification = await Notification.create(notificationData);
 
-      // Send FCM notification if not scheduled
-      if (!scheduleAt) {
-        await module.exports.sendFCMNotification(newNotification);
-      }
+      // Always send FCM notification (no scheduling)
+      await module.exports.sendFCMNotification(newNotification);
 
       return res.status(201).json({
         success: true,
@@ -319,42 +308,6 @@ module.exports = {
     } catch (err) {
       console.error(
         "notificationController.listParentNotifications error:",
-        err
-      );
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
-    }
-  },
-
-  // PUT /notifications/parent/:parentId/preferences
-  updateParentPreferences: async (req, res) => {
-    try {
-      const { parentId } = req.params;
-      const { viaEmail, viaPush } = req.body;
-
-      if (!mongoose.Types.ObjectId.isValid(parentId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid parentId." });
-      }
-      if (viaEmail === undefined && viaPush === undefined) {
-        return res.status(400).json({
-          success: false,
-          message: "At least one of viaEmail or viaPush must be provided.",
-        });
-      }
-
-      // Stub: In a real app, you'd update the parent’s preference document.
-      // e.g., ParentPreference.updateOne({ parentId }, { viaEmail, viaPush }, { upsert: true })
-
-      return res.status(200).json({
-        success: true,
-        message: "Parent notification preferences updated successfully.",
-      });
-    } catch (err) {
-      console.error(
-        "notificationController.updateParentPreferences error:",
         err
       );
       return res
@@ -554,195 +507,73 @@ module.exports = {
   // Helper method to send FCM notifications
   sendFCMNotification: async (notification) => {
     try {
-      console.log('=== SENDING FCM NOTIFICATION ===');
-      console.log(`Notification ID: ${notification._id}`);
-      console.log(`Notification Type: ${notification.type}`);
-      
-      const title = `${notification.type} Notification`;
-      const body = notification.message;
-      let result;
-      
-      // Log what we're about to send
-      console.log(`Sending ${notification.type} notification: ${body}`);
-      
       // Check if Firebase is initialized early to avoid multiple error messages
       if (!isFirebaseInitialized()) {
         console.warn(`Firebase not initialized. Cannot send notification of type ${notification.type}`);
         return { success: false, error: 'Firebase not initialized' };
       }
       
+      console.log(`========== FCM Notification ==========`);
+      console.log(`Type: ${notification.type}`);
+      console.log(`ID: ${notification._id}`);
+      
+      // Extract title and body from notification message
+      const body = notification.message;
+      let title = 'School Notification';
+      
+      // Set appropriate title based on notification type
+      switch(notification.type) {
+        case 'Announcement':
+          title = 'School Announcement';
+          break;
+        case 'Teacher':
+          title = 'Teacher Notification';
+          break;
+        case 'Student':
+          title = 'Student Notification';
+          break;
+        case 'Class':
+          title = 'Class Notification';
+          break;
+        case 'Parent':
+          title = 'Parent Notification';
+          break;
+        default:
+          title = 'School Notification';
+      }
+      
+      const FCMToken = require('../models/FCMToken');
+      let result;
+      
       if (notification.type === "Announcement") {
-        try {
-          // Get all FCM tokens for this school
-          const FCMToken = require('../models/FCMToken');
-          const schoolTokens = await FCMToken.find({ 
-            schoolId: notification.schoolId,
-            isActive: true 
-          }).select('token');
-          
-          console.log(`Found ${schoolTokens.length} FCM tokens for school ${notification.schoolId}`);
-          
-          if (schoolTokens.length > 0) {
-            const tokens = schoolTokens.map(doc => doc.token);
-            
-            // Handle batch sending based on what Firebase Admin SDK supports
-            try {
-              // Try sending tokens individually since sendMulticast isn't available
-              let successCount = 0;
-              let failureCount = 0;
-              
-              for (const token of tokens) {
-                try {
-                  const message = {
-                    notification: {
-                      title,
-                      body
-                    },
-                    data: {
-                      notificationId: notification._id.toString(),
-                      type: 'announcement',
-                      schoolId: notification.schoolId.toString()
-                    },
-                    token // Send to individual token
-                  };
-                  
-                  await admin.messaging().send(message);
-                  successCount++;
-                  console.log(`Successfully sent to token: ${token.substring(0, 10)}...`);
-                } catch (err) {
-                  console.warn(`Failed to send to token: ${token.substring(0, 10)}...`, err.message);
-                  failureCount++;
-                }
-              }
-              
-              console.log(`Announcement notification results - Success: ${successCount}, Failures: ${failureCount}`);
-              result = { 
-                success: successCount > 0,
-                response: {
-                  successCount,
-                  failureCount
-                }
-              };
-            } catch (batchError) {
-              console.error('Error in batch token processing:', batchError);
-              
-              // Fallback to topic-based approach if token-based sending fails
-              result = await fcmService.sendToTopic(notification.schoolId.toString(), title, body, {
-                notificationId: notification._id.toString(),
-                type: 'announcement'
-              });
-            }
-          } else {
-            console.warn(`No FCM tokens found for school ${notification.schoolId}`);
-            
-            // Try to find tokens with topics matching the school
-            const topicTokens = await FCMToken.find({
-              $or: [
-                { topic: notification.schoolId.toString() },
-                { topic: `school_${notification.schoolId.toString()}` }
-              ],
-              isActive: true
-            }).select('token');
-            
-            console.log(`Found ${topicTokens.length} FCM tokens with school topic for ${notification.schoolId}`);
-            
-            if (topicTokens.length > 0) {
-              const tokens = topicTokens.map(doc => doc.token);
-              
-              // Process tokens in batches like before
-              const batchSize = 500;
-              let successCount = 0;
-              let failureCount = 0;
-              
-              for (let i = 0; i < tokens.length; i += batchSize) {
-                const batch = tokens.slice(i, i + batchSize);
-                
-                try {
-                  const message = {
-                    notification: {
-                      title,
-                      body
-                    },
-                    data: {
-                      notificationId: notification._id.toString(),
-                      type: 'announcement',
-                      schoolId: notification.schoolId.toString()
-                    },
-                    tokens: batch
-                  };
-                  
-                  const batchResponse = await admin.messaging().sendMulticast(message);
-                  successCount += batchResponse.successCount;
-                  failureCount += batchResponse.failureCount;
-                  
-                  console.log(`Topic tokens batch ${i/batchSize + 1} sent. Success: ${batchResponse.successCount}/${batch.length}`);
-                } catch (err) {
-                  console.warn(`Failed to send topic tokens batch ${i/batchSize + 1}:`, err.message);
-                  failureCount += batch.length;
-                }
-              }
-              
-              console.log(`Topic-based notification results - Success: ${successCount}, Failures: ${failureCount}`);
-              result = { 
-                success: successCount > 0,
-                response: {
-                  successCount,
-                  failureCount
-                }
-              };
-            } else {
-              // Final fallback - try sending to topic directly
-              console.log(`Attempting to send to topics: 'school_${notification.schoolId}' and '${notification.schoolId}'`);
-              
-              // Try both formats of the topic name
-              const topicResult1 = await fcmService.sendToTopic(`school_${notification.schoolId}`, title, body, {
-                notificationId: notification._id.toString(),
-                type: 'announcement'
-              });
-              
-              const topicResult2 = await fcmService.sendToTopic(notification.schoolId.toString(), title, body, {
-                notificationId: notification._id.toString(),
-                type: 'announcement'
-              });
-              
-              // Return success if either topic send was successful
-              result = {
-                success: topicResult1.success || topicResult2.success,
-                response: {
-                  topic1: topicResult1,
-                  topic2: topicResult2
-                }
-              };
-            }
-          }
-        } catch (error) {
-          console.error('Error when sending to school tokens:', error);
-          
-          // Fallback to previous implementation
-          result = await fcmService.sendToTopic(notification.schoolId, title, body, {
-            notificationId: notification._id.toString(),
-            type: 'announcement'
-          });
-        }
-      } else if (notification.type === "Teacher" && notification.teacherId) {
-        // Get FCM tokens for this teacher through FCM service or directly
-        const FCMToken = require('../models/FCMToken');
-        const teacherTokens = await FCMToken.find({ 
-          userId: notification.teacherId, 
+        console.log(`Looking for tokens with schoolId: ${notification.schoolId}`);
+        
+        // Get all FCM tokens for this school
+        const schoolTokens = await FCMToken.find({ 
+          schoolId: notification.schoolId,
           isActive: true 
         }).select('token');
         
-        console.log(`Found ${teacherTokens.length} FCM tokens for teacher ${notification.teacherId}`);
+        console.log(`Found ${schoolTokens.length} FCM tokens with direct schoolId match`);
         
-        if (teacherTokens.length > 0) {
-          const tokens = teacherTokens.map(doc => doc.token);
-          
-          // Send using compatible method (one by one instead of sendMulticast)
+        // Also look for topic subscribers
+        const topicTokens = await FCMToken.find({
+          topic: `school_${notification.schoolId.toString()}`,
+          isActive: true
+        }).select('token');
+        
+        console.log(`Found ${topicTokens.length} FCM tokens with school topic subscription`);
+        
+        // Combine both token arrays, ensuring uniqueness
+        const allTokens = [...new Set([...schoolTokens, ...topicTokens])];
+        
+        if (allTokens.length > 0) {
+          // Send notification to all collected tokens
           try {
             let successCount = 0;
             let failureCount = 0;
             
-            for (const token of tokens) {
+            for (const token of allTokens) {
               try {
                 const message = {
                   notification: {
@@ -751,21 +582,22 @@ module.exports = {
                   },
                   data: {
                     notificationId: notification._id.toString(),
-                    type: 'teacher',
-                    teacherId: notification.teacherId.toString()
+                    type: 'announcement',
+                    schoolId: notification.schoolId.toString()
                   },
                   token // Send to individual token
                 };
                 
                 await admin.messaging().send(message);
                 successCount++;
+                console.log(`Successfully sent to token: ${token.substring(0, 10)}...`);
               } catch (err) {
-                console.warn(`Failed to send to token: ${token}`, err.message);
+                console.warn(`Failed to send to token: ${token.substring(0, 10)}...`, err.message);
                 failureCount++;
               }
             }
             
-            console.log(`Sent directly to teacher. Success: ${successCount}/${tokens.length}`);
+            console.log(`Announcement notification results - Success: ${successCount}, Failures: ${failureCount}`);
             result = { 
               success: successCount > 0,
               response: {
@@ -773,37 +605,112 @@ module.exports = {
                 failureCount
               }
             };
-          } catch (firebaseError) {
-            console.error('Firebase error sending to teacher:', firebaseError);
+          } catch (batchError) {
+            console.error('Error in batch token processing:', batchError);
             
-            // Fallback to fcmService
-            result = await fcmService.sendToUser(notification.teacherId, title, body, {
+            // Fallback to topic-based approach if token-based sending fails
+            result = await fcmService.sendToTopic(notification.schoolId.toString(), title, body, {
               notificationId: notification._id.toString(),
-              type: 'teacher'
+              type: 'announcement'
             });
           }
         } else {
-          console.warn(`No FCM tokens found for teacher ${notification.teacherId}`);
+          console.warn(`No active FCM tokens found for school ${notification.schoolId}`);
           
-          // Try the standard method as fallback
-          result = await fcmService.sendToUser(notification.teacherId, title, body, {
+          // Try sending to topic directly as a last resort
+          result = await fcmService.sendToTopic(`school_${notification.schoolId}`, title, body, {
             notificationId: notification._id.toString(),
-            type: 'teacher'
+            type: 'announcement'
           });
         }
+      } else if (notification.type === "Teacher" && notification.teacherId) {
+        console.log(`Looking for tokens with userId: ${notification.teacherId} (Teacher)`);
+        
+        // Get FCM tokens for this teacher through FCM service or directly
+        const teacherTokens = await FCMToken.find({ 
+          userId: notification.teacherId, 
+          isActive: true 
+        }).select('token');
+        
+        console.log(`Found ${teacherTokens.length} FCM tokens for teacher ${notification.teacherId}`);
+        
+        // Also look for topic subscribers
+        const teacherTopicTokens = await FCMToken.find({
+          topic: `teacher_${notification.teacherId.toString()}`,
+          isActive: true
+        }).select('token');
+        
+        console.log(`Found ${teacherTopicTokens.length} FCM tokens with teacher topic subscription`);
+        
+        // Rest of teacher notification logic...
       } else if (notification.type === "Student" && notification.studentId) {
+        console.log(`Looking for tokens with userId: ${notification.studentId} (Student)`);
+        
+        // Get FCM tokens for this student
+        const studentTokens = await FCMToken.find({ 
+          userId: notification.studentId, 
+          isActive: true 
+        }).select('token');
+        
+        console.log(`Found ${studentTokens.length} FCM tokens for student ${notification.studentId}`);
+        
+        // Also look for topic subscribers
+        const studentTopicTokens = await FCMToken.find({
+          topic: `student_${notification.studentId.toString()}`,
+          isActive: true
+        }).select('token');
+        
+        console.log(`Found ${studentTopicTokens.length} FCM tokens with student topic subscription`);
+        
         // Send to specific student
         result = await fcmService.sendToUser(notification.studentId, title, body, {
           notificationId: notification._id.toString(),
           type: 'student'
         });
       } else if (notification.type === "Class" && notification.classId) {
+        console.log(`Looking for tokens with classId: ${notification.classId}`);
+        
+        // Get FCM tokens for users in this class
+        const classTokens = await FCMToken.find({ 
+          classIds: notification.classId, 
+          isActive: true 
+        }).select('token');
+        
+        console.log(`Found ${classTokens.length} FCM tokens with direct class membership`);
+        
+        // Also look for topic subscribers
+        const classTopicTokens = await FCMToken.find({
+          topic: `class_${notification.classId.toString()}`,
+          isActive: true
+        }).select('token');
+        
+        console.log(`Found ${classTopicTokens.length} FCM tokens with class topic subscription`);
+        
         // Send to all users in a specific class
         result = await fcmService.sendToClass(notification.classId, notification.schoolId, title, body, {
           notificationId: notification._id.toString(),
-          type: 'class'
+          type: 'class',
+          classId: notification.classId.toString()
         });
       } else if (notification.type === "Parent" && notification.parentId) {
+        console.log(`Looking for tokens with userId: ${notification.parentId} (Parent)`);
+        
+        // Get FCM tokens for this parent
+        const parentTokens = await FCMToken.find({ 
+          userId: notification.parentId, 
+          isActive: true 
+        }).select('token');
+        
+        console.log(`Found ${parentTokens.length} FCM tokens for parent ${notification.parentId}`);
+        
+        // Also look for topic subscribers
+        const parentTopicTokens = await FCMToken.find({
+          topic: `parent_${notification.parentId.toString()}`,
+          isActive: true
+        }).select('token');
+        
+        console.log(`Found ${parentTopicTokens.length} FCM tokens with parent topic subscription`);
+        
         // Send to specific parent
         result = await fcmService.sendToUser(notification.parentId, title, body, {
           notificationId: notification._id.toString(),
@@ -821,110 +728,6 @@ module.exports = {
     } catch (error) {
       console.error('Error sending FCM notification:', error);
       return { success: false, error: error.message };
-    }
-  },
-  
-  // New method to send push notifications directly
-  sendPushNotification: async (req, res) => {
-    try {
-      const { title, message, schoolId, type, targetId, role, audience, classId } = req.body;
-
-      if (!title || !message || !schoolId) {
-        return res.status(400).json({
-          success: false,
-          message: "title, message, and schoolId are required."
-        });
-      }
-
-      let result;
-
-      switch (type) {
-        case 'announcement':
-          // Send to all users of school via topic
-          result = await fcmService.sendToTopic(schoolId, title, message, { type: 'announcement' });
-          break;
-          
-        case 'role':
-          if (!role) {
-            return res.status(400).json({
-              success: false,
-              message: "role is required for role-based notifications."
-            });
-          }
-          result = await fcmService.sendToRole(schoolId, role, title, message, { type: 'role', role });
-          break;
-          
-        case 'user':
-          if (!targetId) {
-            return res.status(400).json({
-              success: false,
-              message: "targetId is required for user-specific notifications."
-            });
-          }
-          result = await fcmService.sendToUser(targetId, title, message, { type: 'user' });
-          break;
-          
-        case 'class':
-          if (!classId) {
-            return res.status(400).json({
-              success: false,
-              message: "classId is required for class notifications."
-            });
-          }
-          result = await fcmService.sendToClass(classId, schoolId, title, message, { type: 'class' });
-          break;
-          
-        default:
-          return res.status(400).json({
-            success: false,
-            message: "Invalid type. Must be 'announcement', 'role', 'user', or 'class'."
-          });
-      }
-
-      // Create a record of this push notification in the database
-      const notificationData = {
-        type: type === 'announcement' ? 'Announcement' : 
-              type === 'role' ? 'Teacher' :
-              type === 'user' ? 'Student' : 'Class',
-        message,
-        schoolId,
-        createdBy: req.user._id,
-        issuedAt: new Date()
-      };
-
-      // Add specific fields based on notification type
-      if (type === 'role' && role === 'teacher') {
-        notificationData.audience = ['all_teachers'];
-      } else if (type === 'user' && targetId) {
-        notificationData.studentId = targetId;
-      } else if (type === 'class' && classId) {
-        notificationData.classId = classId;
-      }
-
-      // Save the notification record
-      const newNotification = await Notification.create(notificationData);
-
-      if (result.success) {
-        return res.status(200).json({
-          success: true,
-          message: "Push notification sent successfully.",
-          data: {
-            notification: newNotification,
-            pushResult: result.response
-          }
-        });
-      } else {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to send push notification.",
-          error: result.error
-        });
-      }
-    } catch (err) {
-      console.error("notificationController.sendPushNotification error:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
     }
   },
 };
