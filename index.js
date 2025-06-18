@@ -43,6 +43,7 @@ api.use('/reports', require('./routes/reportRoutes'));
 api.use('/assignments', require('./routes/assignmentRoutes'));
 api.use('/attendance', require('./routes/attendanceRoutes'));
 api.use('/grades', require('./routes/gradeRoutes'));
+api.use('/parents', require('./routes/parentRoutes'));
 api.use('/lesson-plans', require('./routes/lessonPlanRoutes'));
 api.use('/forms', require('./routes/formRoutes'));
 api.use('/resources', require('./routes/resourceRoutes'));
@@ -54,6 +55,7 @@ api.use('/upload', require('./routes/uploadRoutes'));
 api.use('/fcm', require('./routes/fcmRoutes'));
 api.use('/story', require('./routes/storyRoutes'));
 api.use('/superadmin', require('./routes/superAdminRoutes'));
+
 // Fallback for any undefined /api route
 api.use((req, res) => {
   res.status(404).json({ message: 'API route not found' });
