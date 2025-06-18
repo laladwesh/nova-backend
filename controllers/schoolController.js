@@ -120,3 +120,51 @@ exports.listSchools = async (req, res) => {
     });
   }
 };
+
+exports.getSchoolWithFullDetails = async (req, res) => {
+  try {
+    const school = await School.findById(req.params.id)
+      // Admins (User model)
+      .populate({
+        path: 'admins',
+        select: 'name email role'
+      })
+      // Teachers
+      .populate({
+        path: 'teachers',
+        select: 'teacherId name email phone roles teachingSubs'
+      })
+      // Students
+      .populate({
+        path: 'students',
+        select: 'studentId name email phone gender dob address feePaid'
+      })
+      // Classes
+      .populate({
+        path: 'classes',
+        select: 'name grade section year subjects analytics'
+      })
+      // Parents
+      .populate({
+        path: 'parents',
+        select: 'name email phone students'
+      })
+      .lean();
+
+    if (!school) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'School not found.' });
+    }
+
+    return res.json({
+      success: true,
+      data: { school }
+    });
+  } catch (err) {
+    console.error('getSchoolWithFullDetails error:', err);
+    return res
+      .status(500)
+      .json({ success: false, message: 'Internal server error.' });
+  }
+}
