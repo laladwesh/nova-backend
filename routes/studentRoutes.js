@@ -37,7 +37,7 @@ function canViewOrEditStudent(req, res, next) {
   const { _id, role } = req.user;
 
   // Admins and teachers can proceed
-  if (role === "school_admin" || role === "teacher") {
+  if (role === "school_admin" || role === "teacher" || role === "super_admin") {
     return next();
   }
   // A student may access their own record only
