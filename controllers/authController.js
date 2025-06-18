@@ -474,12 +474,84 @@ exports.forgotPassword = async (req, res) => {
     const resetUrl = `${process.env.BACKEND_URL}/api/auth/reset-password/${rawToken}`;
     // Send email (implement sendEmail utility)
     const emailSubject = "Password Reset Request";
-    const emailBody = `
-      <p>Hello ${user.name},</p>
-      <p>You requested a password reset. Click the link below to reset your password (expires in ${expiresInMinutes} minutes):</p>
-      <a href="${resetUrl}">${resetUrl}</a>
-      <p>If you did not request this, please ignore.</p>
-    `;
+ const emailBody = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Password Reset</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f4f4f7; font-family:Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center">
+          <!--[if mso]>
+          <table role="presentation" width="600"><tr><td>
+          <![endif]-->
+          <table
+            role="presentation"
+            width="100%"
+            max-width="600"
+            cellpadding="0"
+            cellspacing="0"
+            style="background-color:#ffffff; border-radius:8px; overflow:hidden; margin:40px 0; box-shadow:0 2px 8px rgba(0,0,0,0.1);"
+          >
+            <tr>
+              <td align="center" style="background-color:#3869D4; padding:30px">
+                <h1 style="margin:0; color:#ffffff; font-size:24px; letter-spacing:1px;">
+                  Reset Your Password
+                </h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px 40px; color:#51545E; font-size:16px; line-height:1.5;">
+                <p style="margin-top:0;">Hello <strong>${user.name}</strong>,</p>
+                <p>
+                  You requested a password reset. Click the button below to choose a new
+                  password. This link will expire in <strong>${expiresInMinutes} minutes</strong>.
+                </p>
+                <p style="text-align:center; margin:30px 0;">
+                  <a
+                    href="${resetUrl}"
+                    style="
+                      background-color:#22BC66;
+                      color:#ffffff;
+                      text-decoration:none;
+                      padding:12px 24px;
+                      border-radius:4px;
+                      font-size:16px;
+                      font-weight:bold;
+                      display:inline-block;
+                    "
+                  >
+                    Reset Password
+                  </a>
+                </p>
+                <p style="margin-bottom:0;">
+                  If you didn’t request this, just ignore this email—no changes were made.
+                </p>
+                <p style="margin-top:24px; color:#6B6E76; font-size:14px;">
+                  Cheers,<br />
+                  <em>Your Company Team</em>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="background-color:#f4f4f7; padding:20px; font-size:12px; color:#A8AAAF;">
+                &copy; ${new Date().getFullYear()} Your Company. All rights reserved.
+              </td>
+            </tr>
+          </table>
+          <!--[if mso]>
+          </td></tr></table>
+          <![endif]-->
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`;
+
     await sendEmail({
       to: user.email,
       subject: emailSubject,
