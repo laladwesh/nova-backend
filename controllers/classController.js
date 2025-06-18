@@ -18,7 +18,7 @@
  *  - Teacher model exists for validating teacher IDs
  */
 
-const { Class, Teacher } = require("../models");
+const { Class, Teacher, School } = require("../models");
 
 module.exports = {
   // GET /classes
@@ -49,7 +49,7 @@ module.exports = {
         teachers = [],
         subjects = [],
         students = [],
-        analytics = { attendancePct: 0, avgGrade: 0, passPct: 0 }
+        analytics = { attendancePct: 0, avgGrade: 0, passPct: 0 },
       } = req.body;
 
       // Required fields
@@ -83,7 +83,7 @@ module.exports = {
         teachers,
         subjects,
         students,
-        analytics // Include analytics if your model supports it
+        analytics, // Include analytics if your model supports it
       });
 
       // Populate before returning
@@ -91,6 +91,11 @@ module.exports = {
         .populate("teachers", "name email teacherId")
         .populate("students", "name studentId");
 
+      await School.findByIdAndUpdate(
+        schoolId,
+        { $push: { classes: newClass._id } },
+        { new: true }
+      );
       return res.status(201).json({
         success: true,
         message: "Class created successfully.",
@@ -241,9 +246,9 @@ module.exports = {
   },
 
   // PUT /classes/:classId/teachers
-assignTeachersToClass: async (req, res, next) => {
-    const { classId }    = req.params;
-    const { teacherIds } = req.body;  // expecting ["id1","id2",...]
+  assignTeachersToClass: async (req, res, next) => {
+    const { classId } = req.params;
+    const { teacherIds } = req.body; // expecting ["id1","id2",...]
 
     // 1) Validate
     if (!Array.isArray(teacherIds)) {
@@ -263,11 +268,10 @@ assignTeachersToClass: async (req, res, next) => {
       // console.log("Class found:", cls.name);
 
       // 3) Add teachers to class (no duplicates)
-      await Class.findByIdAndUpdate(
-        classId,
-        { $addToSet: { teachers: { $each: teacherIds } } }
-      );
-// console.log("Teachers added to class:", teacherIds , "to class:", cls.teachers);
+      await Class.findByIdAndUpdate(classId, {
+        $addToSet: { teachers: { $each: teacherIds } },
+      });
+      // console.log("Teachers added to class:", teacherIds , "to class:", cls.teachers);
       // 4) Add class to each teacher’s classes array (no duplicates)
       await Teacher.updateMany(
         { _id: { $in: teacherIds } },
@@ -275,8 +279,10 @@ assignTeachersToClass: async (req, res, next) => {
       );
 
       // 5) Return updated list of teachers
-      const populated = await Class.findById(classId)
-        .populate("teachers", "name email teacherId");
+      const populated = await Class.findById(classId).populate(
+        "teachers",
+        "name email teacherId"
+      );
 
       res.json({ success: true, data: populated.teachers });
     } catch (err) {
@@ -315,12 +321,10 @@ assignTeachersToClass: async (req, res, next) => {
       const { subjects } = req.body;
 
       if (!Array.isArray(subjects)) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "subjects must be an array of strings.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "subjects must be an array of strings.",
+        });
       }
 
       const updatedClass = await Class.findByIdAndUpdate(
@@ -377,54 +381,57 @@ assignTeachersToClass: async (req, res, next) => {
 
   // PUT /classes/:classId/students
   assignStudentsToClass: async (req, res, next) => {
-  const { classId }    = req.params;
-  const { studentIds } = req.body;
+    const { classId } = req.params;
+    const { studentIds } = req.body;
 
-  if (!Array.isArray(studentIds)) {
-    return res.status(400).json({ success:false, message:"studentIds must be an array." });
-  }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    const cls = await Class.findById(classId).session(session);
-    if (!cls) throw new Error("Class not found");
-
-    const old = cls.students.map(String);
-    const neu = studentIds.map(String);
-
-    cls.students = neu;
-    await cls.save({ session });
-
-    const toAdd    = neu.filter(id => !old.includes(id));
-    const toRemove = old.filter(id => !neu.includes(id));
-
-    if (toAdd.length) {
-      await Student.updateMany(
-        { _id: { $in: toAdd } },
-        { $addToSet: { classes: cls._id } },
-        { session }
-      );
-    }
-    if (toRemove.length) {
-      await Student.updateMany(
-        { _id: { $in: toRemove } },
-        { $pull:    { classes: cls._id } },
-        { session }
-      );
+    if (!Array.isArray(studentIds)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "studentIds must be an array." });
     }
 
-    await session.commitTransaction();
-    session.endSession();
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const cls = await Class.findById(classId).session(session);
+      if (!cls) throw new Error("Class not found");
 
-    const populated = await Class.findById(classId)
-      .populate("students", "name studentId");
-    res.json({ success:true, data: populated.students });
+      const old = cls.students.map(String);
+      const neu = studentIds.map(String);
 
-  } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
-    next(err);
-  }
-},
+      cls.students = neu;
+      await cls.save({ session });
+
+      const toAdd = neu.filter((id) => !old.includes(id));
+      const toRemove = old.filter((id) => !neu.includes(id));
+
+      if (toAdd.length) {
+        await Student.updateMany(
+          { _id: { $in: toAdd } },
+          { $addToSet: { classes: cls._id } },
+          { session }
+        );
+      }
+      if (toRemove.length) {
+        await Student.updateMany(
+          { _id: { $in: toRemove } },
+          { $pull: { classes: cls._id } },
+          { session }
+        );
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      const populated = await Class.findById(classId).populate(
+        "students",
+        "name studentId"
+      );
+      res.json({ success: true, data: populated.students });
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      next(err);
+    }
+  },
 };
