@@ -1,102 +1,91 @@
-// app.js
-
-require("dotenv").config();
-
-// Initialize Firebase BEFORE requiring any other modules
-console.log('Initializing Firebase from index.js...');
-const { initializeFirebase } = require('./config/firebase');
-const firebaseInitialized = initializeFirebase();
-console.log('Firebase initialization result:', firebaseInitialized);
-
-const express = require("express");
-const connectDb = require("./utils/connectDb");
-const cors = require("cors");
+// index.js
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const cors = require('cors');
 const morgan = require('morgan');
+const connectDb = require('./utils/connectDb');
+const { initializeFirebase } = require('./config/firebase');
 
 const app = express();
-app.use(cors()); // Enable CORS for all routes
-app.use(express.json()); // body parser, etc.
 
-// Import all routers
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const classRoutes = require("./routes/classRoutes");
-const teacherRoutes = require("./routes/teacherRoutes");
-const studentRoutes = require("./routes/studentRoutes");
-const eventRoutes = require("./routes/eventRoutes");
-const calendarRoutes = require("./routes/calendarRoutes");
-const feeRoutes = require("./routes/feeRoutes");
-const notificationRoutes = require("./routes/notificationRoutes");
-const scheduleRoutes = require("./routes/scheduleRoutes");
-const analyticsRoutes = require("./routes/analyticsRoutes");
-const reportRoutes = require("./routes/reportRoutes");
-const assignmentRoutes = require("./routes/assignmentRoutes");
-const attendanceRoutes = require("./routes/attendanceRoutes");
-const gradeRoutes = require("./routes/gradeRoutes");
-const lessonPlanRoutes = require("./routes/lessonPlanRoutes");
-const formRoutes = require("./routes/formRoutes");
-const resourceRoutes = require("./routes/resourceRoutes");
-const messageRoutes = require("./routes/messageRoutes");
-const ptmRoutes = require("./routes/ptmRoutes");
-const searchRoutes = require("./routes/searchRoutes");
-const metadataRoutes = require("./routes/metadataRoutes");
-const uploadRoutes = require("./routes/uploadRoutes");
-const schoolRoutes = require("./routes/schoolRoutes");
-const fcmRoutes = require("./routes/fcmRoutes");
-const storyRoutes = require('./routes/storyRoutes');
-//test route for checking server status
-app.use(morgan('dev'));
-app.get("/", (req, res) => {
-  res.json({ message: "Server is running" });
-});
+// ─── MIDDLEWARE ─────────────────────────────────────────────────────────────
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev'));
 
-// Mount them under appropriate base paths
-app.use("/auth", authRoutes);
-app.use("/users", userRoutes);
-app.use("/schools", schoolRoutes);
-app.use("/classes", classRoutes);
-app.use("/teachers", teacherRoutes);
-app.use("/students", studentRoutes);
-app.use("/events", eventRoutes);
-app.use("/calendar", calendarRoutes);
-app.use("/fees", feeRoutes);
-app.use("/notifications", notificationRoutes);
-app.use("/schedules", scheduleRoutes);
-app.use("/analytics", analyticsRoutes);
-app.use("/reports", reportRoutes);
-app.use("/assignments", assignmentRoutes);
-app.use("/attendance", attendanceRoutes);
-app.use("/grades", gradeRoutes);
-app.use("/lesson-plans", lessonPlanRoutes);
-app.use("/forms", formRoutes);
-app.use("/resources", resourceRoutes);
-app.use("/messages", messageRoutes);
-app.use("/ptm", ptmRoutes);
-app.use("/search", searchRoutes);
-app.use("/metadata", metadataRoutes);
-app.use("/upload", uploadRoutes);
-app.use("/fcm", fcmRoutes);
-app.use('/story', storyRoutes );
+// ─── FIREBASE INIT ──────────────────────────────────────────────────────────
+console.log('Initializing Firebase…');
+const firebaseInitialized = initializeFirebase();
+console.log('Firebase initialized:', firebaseInitialized);
 
-// Fallback 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found on the Server of Nova Backend" });
+// ─── MOUNT ALL /api ROUTES ──────────────────────────────────────────────────
+const api = express.Router();
+
+api.get('/', (req, res) => {
+  res.json({ message: 'API is up  running' });
 });
 
-// Start server after connecting to MongoDB
+api.use('/auth', require('./routes/authRoutes'));
+api.use('/users', require('./routes/userRoutes'));
+api.use('/schools', require('./routes/schoolRoutes'));
+api.use('/classes', require('./routes/classRoutes'));
+api.use('/teachers', require('./routes/teacherRoutes'));
+api.use('/students', require('./routes/studentRoutes'));
+api.use('/events', require('./routes/eventRoutes'));
+api.use('/calendar', require('./routes/calendarRoutes'));
+api.use('/fees', require('./routes/feeRoutes'));
+api.use('/notifications', require('./routes/notificationRoutes'));
+api.use('/schedules', require('./routes/scheduleRoutes'));
+api.use('/analytics', require('./routes/analyticsRoutes'));
+api.use('/reports', require('./routes/reportRoutes'));
+api.use('/assignments', require('./routes/assignmentRoutes'));
+api.use('/attendance', require('./routes/attendanceRoutes'));
+api.use('/grades', require('./routes/gradeRoutes'));
+api.use('/lesson-plans', require('./routes/lessonPlanRoutes'));
+api.use('/forms', require('./routes/formRoutes'));
+api.use('/resources', require('./routes/resourceRoutes'));
+api.use('/messages', require('./routes/messageRoutes'));
+api.use('/ptm', require('./routes/ptmRoutes'));
+api.use('/search', require('./routes/searchRoutes'));
+api.use('/metadata', require('./routes/metadataRoutes'));
+api.use('/upload', require('./routes/uploadRoutes'));
+api.use('/fcm', require('./routes/fcmRoutes'));
+api.use('/story', require('./routes/storyRoutes'));
+
+// Fallback for any undefined /api route
+api.use((req, res) => {
+  res.status(404).json({ message: 'API route not found' });
+});
+
+app.use('/api', api);
+
+// ─── SERVE REACT IN PRODUCTION ──────────────────────────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, 'client/build');
+  app.use(express.static(clientBuildPath));
+
+  // Return index.html for all non-API GET requests
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+}
+
+// ─── START SERVER ───────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 const startServer = async () => {
   await connectDb();
-  
-  // Try to initialize Firebase again after database connection, just to be sure
+
+  // Retry Firebase init if needed
   if (!firebaseInitialized) {
-    console.log('Trying Firebase initialization again after database connection...');
+    console.log('Re-initializing Firebase after DB connect…');
     initializeFirebase();
   }
-  
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 };
 
 startServer();
