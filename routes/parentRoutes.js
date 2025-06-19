@@ -21,4 +21,11 @@ router.put(
   require("../controllers/parentController").updateParent
 );
 
+router.delete(
+  "/:id",
+  authenticate,
+  isSuperAdminAuth,
+  require("../controllers/parentController").deleteParent
+);
+
 module.exports = router;
