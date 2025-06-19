@@ -92,7 +92,7 @@ router.put(
 router.delete(
   "/:teacherId",
   authenticate,           // User must be authenticated
-  isAdmin,                // Only Admin may access
+  canViewOrEditTeacher,               // Only Admin may access
   teacherController.deleteTeacher // Handler removes teacher document
 );
 
