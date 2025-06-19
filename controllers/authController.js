@@ -75,6 +75,8 @@ exports.signup = async (req, res) => {
       role,
       gender,
       dob,
+      phone,       // ← add this
+  address,
       studentId,
       classId,
       schoolId,
@@ -89,6 +91,12 @@ exports.signup = async (req, res) => {
         message: "Name, email, password, role, and schoolId are required.",
       });
     }
+// Normalize gender to Title Case so it matches your schema
+let normalizedGender;
+if (gender) {
+  const g = gender.trim().toLowerCase();              // "other"
+  normalizedGender = g.charAt(0).toUpperCase() + g.slice(1); // "Other"
+}
 
     // 2) School must exist
     const schoolRecord = await School.findById(schoolId);
@@ -140,7 +148,7 @@ exports.signup = async (req, res) => {
       password: hashedPassword,
       role,
       schoolId: schoolRecord._id,
-      gender: gender?.trim(), // Add gender
+      gender: normalizedGender, 
       dob: dob ? new Date(dob) : null, // Add dob
     };
 
@@ -170,7 +178,7 @@ exports.signup = async (req, res) => {
         studentId: studentId.trim(),
         name: name.trim(),
         classId,
-        gender: gender?.trim(), // Ensure gender is passed and trimmed
+        gender: normalizedGender, // Use normalized
         dob: dob ? new Date(dob) : null, // Convert dob to Date if provided
         email: user.email,
         phone: phone?.trim(), // Ensure phone is passed and trimmed

@@ -23,11 +23,11 @@ const UserSchema = new Schema(
     },
     gender: {
       type: String,
-      enum: ["male", "female", "other"],
-      default: "other",
+      enum: ["Male", "Female", "Other"],
+      default: "Other",
     },
     dob: {
-      type: Date, 
+      type: Date,
       validate: {
         validator: function (value) {
           // Check if the date is in the past
@@ -38,7 +38,7 @@ const UserSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["student", "teacher", "school_admin", "parent" , "super_admin"],
+      enum: ["student", "teacher", "school_admin", "parent", "super_admin"],
       default: "student",
     },
     schoolId: {
@@ -48,7 +48,7 @@ const UserSchema = new Schema(
     imageUrl: {
       type: String,
       default: "https://www.gravatar.com/avatar",
-      trim: true,   // Ensure the URL is trimmed    
+      trim: true, // Ensure the URL is trimmed
     },
 
     // ─── ADD THESE TWO FIELDS ─────────────────────────────────────────────────

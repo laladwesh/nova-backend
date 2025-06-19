@@ -8,7 +8,7 @@ const express = require("express");
 const router = express.Router();
 
 // Middleware to verify authentication and admin role
-const { authenticate, isAdmin, isSuperAdminAuth } = require("../middleware/authMiddleware");
+const { authenticate, isAdmin } = require("../middleware/authMiddleware");
 // Controller functions handling Class business logic
 const classController = require("../controllers/classController");
 function superadminoradmin (req, res, next) {
@@ -44,7 +44,7 @@ router.get(
 router.post(
   "/",
   authenticate,           // Ensure user is authenticated
-  isAdmin,                // Only Admin can create classes
+  superadminoradmin,               // Only Admin can create classes
   classController.createClass // Handler creates a new class document
 );
 
