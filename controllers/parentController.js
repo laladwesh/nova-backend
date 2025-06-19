@@ -77,3 +77,30 @@ exports.updateParent = async (req, res) => {
     });
   }
 };
+
+
+exports.deleteParent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the parent by ID
+    const parent = await Parent.findById(id);
+    if (!parent) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Parent not found." });
+    } 
+    // Delete the parent
+    await Parent.findByIdAndDelete(id);
+    res.json({
+      success: true,
+      message: "Parent deleted successfully.",
+    });
+  } catch (err) {
+    console.error("deleteParent error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
