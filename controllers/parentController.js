@@ -39,7 +39,7 @@ exports.getParentWithFullDetails = async (req, res) => {
     });
   }
 };
-
+///parents/:id PUT 
 exports.updateParent = async (req, res) => {
   try {
     const { id } = req.params;
