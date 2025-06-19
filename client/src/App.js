@@ -42,14 +42,14 @@ const App = () => {
           }
         />
 
-<Route
-      path="/school/:id"
-      element={
-        <SuperAdminRoute>
-          <SchoolDetailPage />
-        </SuperAdminRoute>
-      }
-    />
+        <Route
+          path="/school/:id"
+          element={
+            <SuperAdminRoute>
+              <SchoolDetailPage />
+            </SuperAdminRoute>
+          }
+        />
         {/* Only accessible to users with role === "super_admin" */}
         <Route
           path="/superadmin"

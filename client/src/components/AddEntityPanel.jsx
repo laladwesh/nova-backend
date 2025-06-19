@@ -98,7 +98,7 @@ export function AddEntityPanel({
   };
 
   return (
-    <aside className="w-80 no-scrollbar md:w-96 bg-white rounded-xl shadow-xl p-6 sticky top-8 h-[calc(100vh-4rem)] overflow-y-auto">
+    <aside className="w-80 no-scrollbar md:w-96 bg-white rounded-xl shadow-xl p-6 sticky top-8 h-[calc(90vh-4rem)] overflow-y-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">
           {mode

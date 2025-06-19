@@ -11,6 +11,7 @@ import {
   FaSchool,
   FaUsers,
 } from "react-icons/fa";
+import { FaSignOutAlt } from "react-icons/fa";
 import { AddEntityPanel } from "../components/AddEntityPanel";
 
 export const SchoolDetailPage = () => {
@@ -28,6 +29,13 @@ export const SchoolDetailPage = () => {
     students: "",
     parents: "",
   });
+
+  // — logout handler —
+   const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('role');
+    navigate('/pixelgrid');
+  };
 
   // — detail modal & edit state —
   const [detailType, setDetailType] = useState("");
@@ -210,7 +218,7 @@ export const SchoolDetailPage = () => {
     }
   };
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-16">
+    <div className="min-h-screen no-scrollbar bg-gray-100 py-8 px-16">
       <div className="max-w-full mx-auto flex space-x-8 space-y-8">
         <div className="flex-1 space-y-8">
           {/* Header */}
@@ -224,6 +232,13 @@ export const SchoolDetailPage = () => {
             </button>
             <h1 className="text-3xl font-bold text-gray-800">{school.name}</h1>
             <div />
+            <button
+              onClick={handleLogout}
+              className="flex items-center text-red-600 hover:text-red-800"
+            >
+              <FaSignOutAlt className="mr-1" />
+              Logout
+            </button>
           </div>
 
           {/* Metrics */}
