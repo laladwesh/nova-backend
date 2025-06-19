@@ -171,86 +171,92 @@ if (gender) {
 
     // inside exports.signup, replace your existing `if (role === "student") { … }` with:
 
-    if (role === "student") {
-      // 1) Create the Student
-      const studentDoc = await Student.create({
-        _id: user._id, // Use the same _id as User
-        studentId: studentId.trim(),
-        name: name.trim(),
-        classId,
-        gender: normalizedGender, // Use normalized
-        dob: dob ? new Date(dob) : null, // Convert dob to Date if provided
-        email: user.email,
-        phone: phone?.trim(), // Ensure phone is passed and trimmed
-        address: address?.trim(), // Ensure address is passed and trimmed
-        schoolId: schoolRecord._id,
+if (role === "student") {
+  // 1) Create the Student record
+  const studentDoc = await Student.create({
+    _id:       user._id,           // reuse the same _id
+    studentId: studentId.trim(),
+    name:      name.trim(),
+    classId,
+    gender:    normalizedGender,
+    dob:       dob ? new Date(dob) : null,
+    email:     user.email,
+    phone:     phone?.trim(),
+    address:   address?.trim(),
+    schoolId:  schoolRecord._id,
+  });
+
+  // 2) Ensure we got at least one parent
+  if (!Array.isArray(parentInputs) || parentInputs.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "You must supply a non-empty parents array.",
+    });
+  }
+
+  // 3) Validate each parent object
+  for (const [i, p] of parentInputs.entries()) {
+    if (!p.name || !p.email || !p.password) {
+      return res.status(400).json({
+        success: false,
+        message: `Each parent must include name, email, and password (error at index ${i}).`,
       });
-
-      // 2) Validate parentInputs items
-      if (!Array.isArray(parentInputs) || parentInputs.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "You must supply a non-empty parents array.",
-        });
-      }
-      for (const [i, p] of parentInputs.entries()) {
-        if (!p.name || !p.email || !p.password) {
-          return res.status(400).json({
-            success: false,
-            message: `Each parent must include name, email, and password (error in parent index ${i}).`,
-          });
-        }
-      }
-
-      // 3) Create Parent Users & Parent docs
-      const createdParentIds = [];
-      for (const p of parentInputs) {
-        // 3a) Hash parent password
-        const saltP = await bcrypt.genSalt(12);
-        const hashedParentPwd = await bcrypt.hash(p.password.trim(), saltP);
-
-        // 3b) Create User record for parent
-        const parentUser = await User.create({
-          name: p.name.trim(),
-          email: p.email.toLowerCase().trim(),
-          password: hashedParentPwd,
-          role: "parent",
-          schoolId: schoolRecord._id,
-        });
-
-        // 3c) Create Parent doc with same _id
-        const parentDoc = await Parent.create({
-          _id: parentUser._id,
-          name: p.name.trim(),
-          email: p.email.toLowerCase().trim(),
-          phone: p.phone?.trim(),
-          schoolId: schoolRecord._id,
-          students: [studentDoc._id],
-        });
-
-        // 3d) Push into School.parents
-
-        createdParentIds.push(parentUser._id);
-      }
-
-await School.findByIdAndUpdate(
-  schoolRecord._id,
-  { $addToSet: { students: studentDoc._id } },
-  { new: true }
-);
-
-
-      // 4) Link Parents into Student.parents array
-      studentDoc.parents = createdParentIds;
-      await studentDoc.save();
-
-      // 5) Link the Student into its Class
-      await Class.findByIdAndUpdate(
-        classId,
-        { $push: { students: studentDoc._id } },
-        { new: true }
-      );
     }
+  }
+
+  // 4) Create Parent Users & Parent docs
+  const createdParentIds = [];
+  for (const p of parentInputs) {
+    // a) Hash parent password
+    const saltP = await bcrypt.genSalt(12);
+    const hashedParentPwd = await bcrypt.hash(p.password.trim(), saltP);
+
+    // b) Parent-level User record
+    const parentUser = await User.create({
+      name:     p.name.trim(),
+      email:    p.email.toLowerCase().trim(),
+      password: hashedParentPwd,
+      role:     "parent",
+      schoolId: schoolRecord._id,
+    });
+
+    // c) Parent document
+    const parentDoc = await Parent.create({
+      _id:       parentUser._id,   // same _id
+      name:      p.name.trim(),
+      email:     p.email.toLowerCase().trim(),
+      phone:     p.phone?.trim(),
+      schoolId:  schoolRecord._id,
+      students: [studentDoc._id],
+    });
+
+    createdParentIds.push(parentUser._id);
+  }
+
+  // 5) Link this student into the School
+  await School.findByIdAndUpdate(
+    schoolRecord._id,
+    {
+      $addToSet: {
+        students: studentDoc._id,
+        parents:  { $each: createdParentIds }
+      }
+    },
+    { new: true }
+  );
+
+  // 6) Link Parents into the Student.parents array
+  studentDoc.parents = createdParentIds;
+  await studentDoc.save();
+
+  // 7) Add student to its Class
+  await Class.findByIdAndUpdate(
+    classId,
+    { $push: { students: studentDoc._id } },
+    { new: true }
+  );
+}
+
 
     if (role === "teacher") {
       const teacherDoc = await Teacher.create({
