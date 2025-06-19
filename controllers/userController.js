@@ -360,4 +360,31 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
+  deleteUser: async (req, res) => {
+    try {
+      const userId = req.params.id;
+      if (!userId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User ID is required." });
+      }
+
+      const user = await User.findByIdAndDelete(userId);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "User deleted successfully.",
+      });
+    } catch (err) {
+      console.error("UserController.deleteUser error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  },
 };
