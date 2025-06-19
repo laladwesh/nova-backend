@@ -18,7 +18,7 @@
  *  - Class model used to validate classId
  */
 
-const { Student, Class } = require("../models"); // Import Mongoose models
+const { Student, Class, User, Parent, School } = require("../models"); // Import Mongoose models
 const mongoose = require("mongoose");           // Import Mongoose for ObjectId validation
 
 module.exports = {
@@ -320,38 +320,65 @@ module.exports = {
    * Remove a student document by ID.
    */
   deleteStudent: async (req, res) => {
-    try {
-      const { studentId } = req.params;
+  try {
+    const { studentId } = req.params;
 
-      // Validate studentId
-      if (!mongoose.Types.ObjectId.isValid(studentId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid studentId." });
-      }
-
-      // Delete the document
-      const deleted = await Student.findByIdAndDelete(studentId);
-
-      // Handle not found
-      if (!deleted) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Student not found." });
-      }
-
-      // Return success
-      return res.status(200).json({
-        success: true,
-        message: "Student deleted successfully.",
-      });
-    } catch (err) {
-      console.error("studentController.deleteStudent error:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
+    // 1) Validate studentId
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ success: false, message: "Invalid studentId." });
     }
-  },
+
+    // 2) Load the student (with its parents, classId, schoolId)
+    const student = await Student.findById(studentId).select("parents classId schoolId");
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found." });
+    }
+
+    // 3) Remove student from its Class
+    await Class.findByIdAndUpdate(student.classId, {
+      $pull: { students: student._id }
+    });
+
+    // 4) Remove student (and parent IDs) from the School
+    await School.findByIdAndUpdate(student.schoolId, {
+      $pull: {
+        students: student._id,
+        parents:  { $in: student.parents }
+      }
+    });
+
+    // 5) For each parent: pull out this student, then delete only if no students left
+    for (const parentId of student.parents) {
+      if (!mongoose.Types.ObjectId.isValid(parentId)) continue;
+
+      // a) Remove the student reference
+      await Parent.findByIdAndUpdate(parentId, {
+        $pull: { students: student._id }
+      });
+
+      // b) Check if parent still has other students
+      const parentDoc = await Parent.findById(parentId).select("students");
+      if (parentDoc && parentDoc.students.length === 0) {
+        // delete Parent doc + its User
+        await Parent.findByIdAndDelete(parentId);
+        await User.findByIdAndDelete(parentId);
+      }
+    }
+
+    // 6) Finally delete the Student and its User
+    await Student.findByIdAndDelete(student._id);
+    await User.findByIdAndDelete(student._id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Student (and any orphan parents) deleted successfully."
+    });
+  } catch (err) {
+    console.error("studentController.deleteStudent error:", err);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+},
+
 
   /**
    * GET /students/:studentId/progress
