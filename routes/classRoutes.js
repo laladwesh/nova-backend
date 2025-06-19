@@ -80,7 +80,7 @@ router.put(
 router.delete(
   "/:classId",
   authenticate,           // Ensure user is authenticated
-  isAdmin,                // Only Admin can delete classes
+  superadminoradmin,              // Only Admin can delete classes
   classController.deleteClass // Handler removes class document
 );
 
