@@ -784,3 +784,26 @@ exports.renderResetPasswordForm = (req, res) => {
     </html>
   `);
 };
+
+
+
+// PATCH /api/auth/school/:schoolId
+exports.toggleSchoolActive = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ success: false, message: "School not found." });
+    }
+    school.isActive = !school.isActive;
+    await school.save();
+    return res.json({
+      success: true,
+      data: { school },
+      message: `School is now ${school.isActive ? "active" : "inactive"}.`
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};

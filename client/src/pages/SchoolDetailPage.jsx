@@ -32,38 +32,39 @@ export const SchoolDetailPage = () => {
   });
 
   // — logout handler —
-   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('role');
-    navigate('/pixelgrid');
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("role");
+    navigate("/pixelgrid");
   };
 
   const handleDelete = async () => {
-  if (!window.confirm(`Delete this ${detailType}?`)) return;
-  setDetailLoading(true);
-  try {
-    const token = localStorage.getItem("accessToken");
-    // build URL: users for Admin, teachers, students, parents, classes
-   const key =
-    detailType === "Admin" ? "users" :
-    detailType === "Class" ? "classes" :
-    detailType.toLowerCase() + "s";
-    const url = `/api/${key}/${detailData._id}`;
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
-    });
-    const body = await res.json();
-    if (!res.ok || !body.success) throw new Error(body.message);
-    setDetailType("");       // close modal
-    fetchSchool();           // refresh lists
-  } catch (err) {
-    alert(err.message);
-  } finally {
-    setDetailLoading(false);
-  }
-};
-
+    if (!window.confirm(`Delete this ${detailType}?`)) return;
+    setDetailLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      // build URL: users for Admin, teachers, students, parents, classes
+      const key =
+        detailType === "Admin"
+          ? "users"
+          : detailType === "Class"
+          ? "classes"
+          : detailType.toLowerCase() + "s";
+      const url = `/api/${key}/${detailData._id}`;
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      });
+      const body = await res.json();
+      if (!res.ok || !body.success) throw new Error(body.message);
+      setDetailType(""); // close modal
+      fetchSchool(); // refresh lists
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   // — detail modal & edit state —
   const [detailType, setDetailType] = useState("");
@@ -71,8 +72,8 @@ export const SchoolDetailPage = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
-
- const fetchSchool = useCallback(async () => {
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const fetchSchool = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
@@ -160,10 +161,11 @@ export const SchoolDetailPage = () => {
     }
   };
 
-  const openDetail = async (type, endpoint) => {
+  const openDetail = async (type, endpoint, readOnly = false) => {
     setDetailType(type);
     setDetailData(null);
     setDetailLoading(true);
+    setIsReadOnly(readOnly);
     try {
       const token = localStorage.getItem("accessToken");
       const res = await fetch(endpoint, {
@@ -182,12 +184,14 @@ export const SchoolDetailPage = () => {
     }
   };
   const openTeacherDetail = (id) =>
-    openDetail("Teacher", `/api/teachers/${id}`);
+    openDetail("Teacher", `/api/teachers/${id}`, false);
   const openStudentDetail = (id) =>
-    openDetail("Student", `/api/students/${id}`);
-  const openParentDetail = (id) => openDetail("Parent", `/api/parents/${id}`);
-  const openClassDetail = (id) => openDetail("Class", `/api/classes/${id}`);
-  const openAdminDetail = (id) => openDetail("User", `/api/users/${id}`); // admin under /api/users
+    openDetail("Student", `/api/students/${id}`, false);
+  const openParentDetail = (id) =>
+    openDetail("Parent", `/api/parents/${id}`, false);
+  const openClassDetail = (id) =>
+    openDetail("Class", `/api/classes/${id}`, false);
+  const openAdminDetail = (id) => openDetail("User", `/api/users/${id}`, true); // admin under /api/users
 
   const filtered = (list, q) =>
     list.filter((i) => i.name.toLowerCase().includes(q.trim().toLowerCase()));
@@ -506,7 +510,13 @@ export const SchoolDetailPage = () => {
             </ul>
           </div>
         </div>
-        <AddEntityPanel schoolId={id} classes={school.classes} teachers={school.teachers}  students={school.students} onAdded={() => fetchSchool()} />
+        <AddEntityPanel
+          schoolId={id}
+          classes={school.classes}
+          teachers={school.teachers}
+          students={school.students}
+          onAdded={() => fetchSchool()}
+        />
       </div>
 
       {/* Detail Modal */}
@@ -523,35 +533,37 @@ export const SchoolDetailPage = () => {
               <h3 className="text-2xl font-semibold text-gray-800">
                 {detailType} Details
               </h3>
-              <div>
-                {isEditing && (
+              {!isReadOnly && (
+                <div>
+                  {isEditing && (
+                    <button
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditForm(seedForm(detailData));
+                      }}
+                      className="mr-4 text-gray-500 hover:text-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  )}
                   <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditForm(seedForm(detailData));
-                    }}
-                    className="mr-4 text-gray-500 hover:text-gray-700"
+                    onClick={() =>
+                      isEditing ? submitEdit() : setIsEditing(true)
+                    }
+                    className="text-indigo-600 hover:text-indigo-800"
                   >
-                    Cancel
+                    {isEditing ? "Save" : <FaEdit size={20} />}
                   </button>
-                )}
-                <button
-                  onClick={() =>
-                    isEditing ? submitEdit() : setIsEditing(true)
-                  }
-                  className="text-indigo-600 hover:text-indigo-800"
-                >
-                  {isEditing ? "Save" : <FaEdit size={20} />}
-                </button>
-                {!isEditing && (
-    <button
-      onClick={handleDelete}
-      className="ml-4 text-red-600 hover:text-red-800"
-    >
-      <FaTrashAlt size={20} />
-    </button>
-  )}
-              </div>
+                  {!isEditing && (
+                    <button
+                      onClick={handleDelete}
+                      className="ml-4 text-red-600 hover:text-red-800"
+                    >
+                      <FaTrashAlt size={20} />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {detailLoading ? (

@@ -8,7 +8,7 @@ const express = require("express");
 const router = express.Router();
 
 // Middleware to verify access token for protected routes
-const { authenticate } = require("../middleware/authMiddleware");
+const { authenticate, isSuperAdminAuth } = require("../middleware/authMiddleware");
 // Controller with business logic for authentication operations
 const authController = require("../controllers/authController");
 
@@ -94,5 +94,6 @@ router.post(
   authController.logout          // Handler invalidates tokens and ends session
 );
 
+router.patch('/school/:schoolId' , authenticate , isSuperAdminAuth ,authController.toggleSchoolActive);
 // Export configured router to mount in main application
 module.exports = router;

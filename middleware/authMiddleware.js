@@ -1,18 +1,17 @@
 // middleware/authMiddleware.js
 
-
- function isSuperAdminAuth(req, res, next) {
-  if (req.user.role !== 'super_admin') {
+function isSuperAdminAuth(req, res, next) {
+  if (req.user.role !== "super_admin") {
     return res
       .status(403)
-      .json({ success: false, message: 'Super admin role required.' });
+      .json({ success: false, message: "Super admin role required." });
   }
   next();
 }
 
-
 const jwt = require("jsonwebtoken");
-const { User } = require("../models"); // assumes models/index.js exports User
+const { User, School } = require("../models"); // assumes models/index.js exports User
+const { default: mongoose } = require("mongoose");
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here";
 
 /**
@@ -23,77 +22,81 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here";
  */
 async function authenticate(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
-    // console.log("Auth Header:", authHeader);
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // --- JWT verify + load user ---
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith("Bearer ")) {
       return res
         .status(401)
-        .json({
-          success: false,
-          message: "Missing or invalid Authorization header.",
-        });
+        .json({ success: false, message: "Missing token." });
     }
-
-    const token = authHeader.split(" ")[1];
+    const token = auth.split(" ")[1];
     let payload;
     try {
       payload = jwt.verify(token, JWT_SECRET);
-    } catch (err) {
+    } catch {
       return res
         .status(401)
-        .json({ success: false, message: "Invalid or expired token." });
+        .json({ success: false, message: "Invalid token." });
     }
 
-    // payload should contain at least { userId, iat, exp }
     const user = await User.findById(payload.userId).select("-password");
-    
-    // console.log("Authenticated User:", user);
     if (!user) {
       return res
         .status(401)
         .json({ success: false, message: "User not found." });
     }
-    
-    // Check for schoolId in either body or query parameters
-    const schoolIdToCheck = req.query.schoolId;
-    
-    // Only perform the school check if a schoolId was provided and user has schoolId
-    if (schoolIdToCheck && user.schoolId) {
-      try {
-        // Using toString() for safer comparison
-        const userSchoolId = user.schoolId.toString();
-        const requestSchoolId = schoolIdToCheck.toString();
-        
-        if (userSchoolId !== requestSchoolId) {
-          return res
-            .status(401)
-            .json({ success: false, message: "Unauthorized access to this school." });
-        }
-      } catch (err) {
-        console.error("Error comparing school IDs:", err);
-        return res
-          .status(500)
-          .json({ success: false, message: "Error validating school access." });
-      }
-    }
 
-    // Attach minimal user info to req.user
+    // attach for downstream
     req.user = {
-      _id: user._id,
+      _id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
+      schoolId: user.schoolId?.toString() || null,
     };
-    // console.log("Request User:", req.user);
+
+    // --- Super-admin bypasses school check ---
+    if (req.user.role === "super_admin") {
+      return next();
+    }
+
+    // --- For everyone else, require + validate schoolId ---
+    const schoolId =
+      req.params.schoolId || req.body.schoolId || req.query.schoolId;
+
+    if (!schoolId || !mongoose.Types.ObjectId.isValid(schoolId)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "A valid schoolId is required." });
+    }
+
+    // must match the user’s own school
+    if (req.user.schoolId !== schoolId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized school access." });
+    }
+
+    // load & check isActive
+    const school = await School.findById(schoolId).select("isActive");
+    if (!school) {
+      return res
+        .status(404)
+        .json({ success: false, message: "School not found." });
+    }
+    if (!school.isActive) {
+      return res
+        .status(403)
+        .json({ success: false, message: "This school is inactive." });
+    }
+
+    // all good
     next();
   } catch (err) {
-    console.error("Error in authenticate middleware:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error." });
+    console.error("Auth middleware error:", err);
+    res.status(500).json({ success: false, message: "Server error." });
   }
 }
-
 /**
  * 2. isAdmin
  *    - Ensures req.user.role === 'school_admin'
@@ -187,5 +190,5 @@ module.exports = {
   isStudent,
   isParent,
   superAdminAuth,
-  isSuperAdminAuth
+  isSuperAdminAuth,
 };

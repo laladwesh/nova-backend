@@ -32,7 +32,8 @@ const SchoolSchema = new Schema(
     },
     address: { type: String, default: "" },
     phone:   { type: String, default: "" },
-    email:   { type: String, default: "", unique: true}
+    email:   { type: String, default: "", unique: true},
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
