@@ -119,3 +119,11 @@ router.put(
 
 // Export configured router to mount in main application
 module.exports = router;
+
+
+router.delete(
+  "/:id",
+  authenticate, // Must be logged in
+  isSuperAdminAuth, // Must be super admin
+  userController.deleteUser // Handler deletes user by ID
+);
