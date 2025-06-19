@@ -10,6 +10,7 @@ import {
   FaUserGraduate,
   FaSchool,
   FaUsers,
+  FaTrashAlt,
 } from "react-icons/fa";
 import { FaSignOutAlt } from "react-icons/fa";
 import { AddEntityPanel } from "../components/AddEntityPanel";
@@ -36,6 +37,33 @@ export const SchoolDetailPage = () => {
     localStorage.removeItem('role');
     navigate('/pixelgrid');
   };
+
+  const handleDelete = async () => {
+  if (!window.confirm(`Delete this ${detailType}?`)) return;
+  setDetailLoading(true);
+  try {
+    const token = localStorage.getItem("accessToken");
+    // build URL: users for Admin, teachers, students, parents, classes
+   const key =
+    detailType === "Admin" ? "users" :
+    detailType === "Class" ? "classes" :
+    detailType.toLowerCase() + "s";
+    const url = `/api/${key}/${detailData._id}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+    });
+    const body = await res.json();
+    if (!res.ok || !body.success) throw new Error(body.message);
+    setDetailType("");       // close modal
+    fetchSchool();           // refresh lists
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    setDetailLoading(false);
+  }
+};
+
 
   // — detail modal & edit state —
   const [detailType, setDetailType] = useState("");
@@ -515,6 +543,14 @@ export const SchoolDetailPage = () => {
                 >
                   {isEditing ? "Save" : <FaEdit size={20} />}
                 </button>
+                {!isEditing && (
+    <button
+      onClick={handleDelete}
+      className="ml-4 text-red-600 hover:text-red-800"
+    >
+      <FaTrashAlt size={20} />
+    </button>
+  )}
               </div>
             </div>
 
