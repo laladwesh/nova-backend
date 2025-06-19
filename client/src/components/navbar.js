@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 const Navbar = () => {
   // Google Form URL - replace with your actual Google Form URL
-  const googleFormUrl = "https://forms.gle/exampleFormLink123";
+  const googleFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdldpWMz0Bs_g9ZVfpiQ7klC8q8yWEOqpVz81zmBb2SxsuhWw/viewform";
   
   const [menuOpen, setMenuOpen] = useState(false);
   

@@ -1,11 +1,4 @@
-.App {
-  text-align: center;
-  background-image: url('../public/assets/image4.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
+
 
 .app-container {
   background: rgba(0, 0, 0, 0.3);

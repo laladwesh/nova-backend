@@ -140,7 +140,10 @@ exports.signup = async (req, res) => {
       password: hashedPassword,
       role,
       schoolId: schoolRecord._id,
+      gender: gender?.trim(), // Add gender
+      dob: dob ? new Date(dob) : null, // Add dob
     };
+
     if (role === "student") {
       newUserData.studentId = studentId.trim();
       newUserData.classId = classId;
@@ -163,11 +166,15 @@ exports.signup = async (req, res) => {
     if (role === "student") {
       // 1) Create the Student
       const studentDoc = await Student.create({
-        _id: user._id,
+        _id: user._id, // Use the same _id as User
         studentId: studentId.trim(),
         name: name.trim(),
         classId,
+        gender: gender?.trim(), // Ensure gender is passed and trimmed
+        dob: dob ? new Date(dob) : null, // Convert dob to Date if provided
         email: user.email,
+        phone: phone?.trim(), // Ensure phone is passed and trimmed
+        address: address?.trim(), // Ensure address is passed and trimmed
         schoolId: schoolRecord._id,
       });
 

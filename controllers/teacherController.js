@@ -25,11 +25,24 @@ module.exports = {
   // GET /teachers
   listTeachers: async (req, res) => {
     try {
-      // Optionally implement pagination:
-      // const { page = 1, limit = 20 } = req.query;
       const teachers = await Teacher.find()
-        .sort({ name: 1 }) // alphabetical
-        .select("-__v");
+        .populate({
+          path: "classes",
+          select: "name grade section year", // Explicitly populate classes
+        })
+        .populate({
+          path: "schoolId",
+          select: "name address", // Explicitly populate schoolId
+        })
+        .select("-__v"); // Exclude __v field
+
+      // Fallback check for populated fields
+      if (!teachers || teachers.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No teachers found or population failed.",
+        });
+      }
 
       return res.status(200).json({
         success: true,

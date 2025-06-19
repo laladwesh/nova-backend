@@ -10,7 +10,13 @@ import ContactSection from '../components/HomePage/ContactSection';
 import Navbar from '../components/navbar';
 const HomePage = () => {
   return (
-    <div className="min-h-screen text-white relative">
+    <div className="min-h-screen text-white relative" style={{
+      backgroundImage: "url('../assets/image4.png')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundAttachment: "fixed"
+    }}>
       <Navbar/>
         <HeroSection />
         <ProblemSection />

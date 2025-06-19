@@ -3,7 +3,7 @@ import React from 'react';
 const HeroSection = () => {
   return (
     <section 
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-[80vh] flex items-center justify-center overflow-hidden"
       style={{
         backgroundImage: "url('/assets/image3.png')",
         backgroundSize: "cover",
@@ -35,6 +35,8 @@ const HeroSection = () => {
         
         <p className="text-base md:text-lg lg:text-xl text-gray-300 max-w-5xl mx-auto mb-8 leading-relaxed">
           With our cutting-edge technology, our AI chatbots deliver 24/7 support, reduce costs, and boost sales.
+        </p>
+        <p className="text-base md:text-lg lg:text-xl text-gray-300 max-w-5xl mx-auto mb-8 leading-relaxed">
           Whether it's lead generation, automated customer support, or proper leads management, our results stand out.
         </p>
 
