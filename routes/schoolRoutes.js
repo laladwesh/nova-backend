@@ -12,9 +12,8 @@ router.get('/:id',    authenticate, isSuperAdminAuth ,schoolController.getSchool
 
 router.post(
   "/",
-  superAdminAuth,
-  //  authenticate,
-  //  isAdmin,
+   authenticate,
+   isSuperAdminAuth,
   schoolController.createSchool
 );
 
