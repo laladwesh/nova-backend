@@ -8,10 +8,18 @@ const express = require("express");
 const router = express.Router();
 
 // Middleware to verify authentication and admin role
-const { authenticate, isAdmin } = require("../middleware/authMiddleware");
+const { authenticate, isAdmin, isSuperAdminAuth } = require("../middleware/authMiddleware");
 // Controller functions handling Class business logic
 const classController = require("../controllers/classController");
-
+function superadminoradmin (req, res, next) {
+  if (req.user.role === "super_admin" || req.user.role === "school_admin") {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: "Not authorized to perform this action.",
+  });
+}
 ///////////////////////////
 // Class CRUD Endpoints
 ///////////////////////////
@@ -60,7 +68,7 @@ router.get(
 router.put(
   "/:classId",
   authenticate,           // Ensure user is authenticated
-  isAdmin,                // Only Admin can update classes
+  superadminoradmin,              // Only Admin can update classes
   classController.updateClass // Handler updates class document
 );
 
