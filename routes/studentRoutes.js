@@ -19,7 +19,7 @@ const studentController = require("../controllers/studentController");
  */
 function isTeacherOrAdmin(req, res, next) {
   const role = req.user.role;
-  if (role === "teacher" || role === "school_admin") {
+  if (role === "teacher" || role === "school_admin" || role === "super_admin") {
     return next();             // authorized
   }
   // forbidden for other roles
