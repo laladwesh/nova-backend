@@ -75,8 +75,8 @@ exports.signup = async (req, res) => {
       role,
       gender,
       dob,
-      phone,       // ← add this
-  address,
+      phone, // ← add this
+      address,
       studentId,
       classId,
       schoolId,
@@ -91,12 +91,12 @@ exports.signup = async (req, res) => {
         message: "Name, email, password, role, and schoolId are required.",
       });
     }
-// Normalize gender to Title Case so it matches your schema
-let normalizedGender;
-if (gender) {
-  const g = gender.trim().toLowerCase();              // "other"
-  normalizedGender = g.charAt(0).toUpperCase() + g.slice(1); // "Other"
-}
+    // Normalize gender to Title Case so it matches your schema
+    let normalizedGender;
+    if (gender) {
+      const g = gender.trim().toLowerCase(); // "other"
+      normalizedGender = g.charAt(0).toUpperCase() + g.slice(1); // "Other"
+    }
 
     // 2) School must exist
     const schoolRecord = await School.findById(schoolId);
@@ -148,7 +148,7 @@ if (gender) {
       password: hashedPassword,
       role,
       schoolId: schoolRecord._id,
-      gender: normalizedGender, 
+      gender: normalizedGender,
       dob: dob ? new Date(dob) : null, // Add dob
     };
 
@@ -171,92 +171,117 @@ if (gender) {
 
     // inside exports.signup, replace your existing `if (role === "student") { … }` with:
 
-if (role === "student") {
-  // 1) Create the Student record
-  const studentDoc = await Student.create({
-    _id:       user._id,           // reuse the same _id
-    studentId: studentId.trim(),
-    name:      name.trim(),
-    classId,
-    gender:    normalizedGender,
-    dob:       dob ? new Date(dob) : null,
-    email:     user.email,
-    phone:     phone?.trim(),
-    address:   address?.trim(),
-    schoolId:  schoolRecord._id,
-  });
+    if (role === "student") {
+      // 1) Create the Student record
+      const studentDoc = await Student.create({
+        _id: user._id, // reuse the same _id
+        studentId: studentId.trim(),
+        name: name.trim(),
+        classId,
+        gender: normalizedGender,
+        dob: dob ? new Date(dob) : null,
+        email: user.email,
+        phone: phone?.trim(),
+        address: address?.trim(),
+        schoolId: schoolRecord._id,
+      });
 
-  // 2) Ensure we got at least one parent
-  if (!Array.isArray(parentInputs) || parentInputs.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: "You must supply a non-empty parents array.",
-    });
-  }
+      // 2) Ensure we got at least one parent
+      if (!Array.isArray(parentInputs) || parentInputs.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "You must supply a non-empty parents array.",
+        });
+      }
 
-  // 3) Validate each parent object
-  for (const [i, p] of parentInputs.entries()) {
-    if (!p.name || !p.email || !p.password) {
-      return res.status(400).json({
-        success: false,
-        message: `Each parent must include name, email, and password (error at index ${i}).`,
+      // 3) Validate each parent object
+      for (const [i, p] of parentInputs.entries()) {
+        if (!p.name || !p.email || !p.password) {
+          return res.status(400).json({
+            success: false,
+            message: `Each parent must include name, email, and password (error at index ${i}).`,
+          });
+        }
+      }
+
+      // 4) Create Parent Users & Parent docs
+      const createdParentIds = [];
+for (const p of parentInputs) {
+    const emailNorm = p.email.toLowerCase().trim();
+
+    // 3a) Try to find an existing parent User
+    let parentUser = await User.findOne({ email: emailNorm, role: "parent" });
+    let parentDoc;
+
+    if (parentUser) {
+      // — parent user exists: fetch or create their Parent doc
+      parentDoc = await Parent.findById(parentUser._id);
+      if (!parentDoc) {
+        // weird edge case: create missing Parent doc
+        parentDoc = await Parent.create({
+          _id:       parentUser._id,
+          name:      p.name.trim(),
+          email:     emailNorm,
+          phone:     p.phone?.trim(),
+          schoolId:  schoolRecord._id,
+          students:  [studentDoc._id],
+        });
+      } else {
+        // add student to their students array if not already present
+        if (!parentDoc.students.includes(studentDoc._id)) {
+          parentDoc.students.push(studentDoc._id);
+          await parentDoc.save();
+        }
+      }
+    } else {
+      // 3b) No existing parent: create both User + Parent
+      const saltP = await bcrypt.genSalt(12);
+      const hashedParentPwd = await bcrypt.hash(p.password.trim(), saltP);
+
+      parentUser = await User.create({
+        name:     p.name.trim(),
+        email:    emailNorm,
+        password: hashedParentPwd,
+        role:     "parent",
+        schoolId: schoolRecord._id,
+      });
+
+      parentDoc = await Parent.create({
+        _id:       parentUser._id,
+        name:      p.name.trim(),
+        email:     emailNorm,
+        phone:     p.phone?.trim(),
+        schoolId:  schoolRecord._id,
+        students:  [studentDoc._id],
       });
     }
-  }
-
-  // 4) Create Parent Users & Parent docs
-  const createdParentIds = [];
-  for (const p of parentInputs) {
-    // a) Hash parent password
-    const saltP = await bcrypt.genSalt(12);
-    const hashedParentPwd = await bcrypt.hash(p.password.trim(), saltP);
-
-    // b) Parent-level User record
-    const parentUser = await User.create({
-      name:     p.name.trim(),
-      email:    p.email.toLowerCase().trim(),
-      password: hashedParentPwd,
-      role:     "parent",
-      schoolId: schoolRecord._id,
-    });
-
-    // c) Parent document
-    const parentDoc = await Parent.create({
-      _id:       parentUser._id,   // same _id
-      name:      p.name.trim(),
-      email:     p.email.toLowerCase().trim(),
-      phone:     p.phone?.trim(),
-      schoolId:  schoolRecord._id,
-      students: [studentDoc._id],
-    });
 
     createdParentIds.push(parentUser._id);
   }
 
-  // 5) Link this student into the School
-  await School.findByIdAndUpdate(
-    schoolRecord._id,
-    {
-      $addToSet: {
-        students: studentDoc._id,
-        parents:  { $each: createdParentIds }
-      }
-    },
-    { new: true }
-  );
+      // 5) Link this student into the School
+      await School.findByIdAndUpdate(
+        schoolRecord._id,
+        {
+          $addToSet: {
+            students: studentDoc._id,
+            parents: { $each: createdParentIds },
+          },
+        },
+        { new: true }
+      );
 
-  // 6) Link Parents into the Student.parents array
-  studentDoc.parents = createdParentIds;
-  await studentDoc.save();
+      // 6) Link Parents into the Student.parents array
+      studentDoc.parents = createdParentIds;
+      await studentDoc.save();
 
-  // 7) Add student to its Class
-  await Class.findByIdAndUpdate(
-    classId,
-    { $push: { students: studentDoc._id } },
-    { new: true }
-  );
-}
-
+      // 7) Add student to its Class
+      await Class.findByIdAndUpdate(
+        classId,
+        { $push: { students: studentDoc._id } },
+        { new: true }
+      );
+    }
 
     if (role === "teacher") {
       const teacherDoc = await Teacher.create({
