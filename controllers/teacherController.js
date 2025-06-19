@@ -18,7 +18,7 @@
  *  - Class model can be used to calculate performance metrics (e.g., via Class.analytics)
  */
 
-const { Teacher, Class } = require("../models");
+const { Teacher, Class, User, School } = require("../models");
 const mongoose = require("mongoose");
 
 module.exports = {
@@ -79,7 +79,7 @@ module.exports = {
           message: "teacherId, name, email, and schoolId are required.",
         });
       }
-      
+
       // Check for unique teacherId and email
       const existing = await Teacher.findOne({
         $or: [{ teacherId }, { email: email.toLowerCase() }],
@@ -119,7 +119,7 @@ module.exports = {
       });
 
       await teacher.save();
-      
+
       // Return the complete teacher object including schoolId
       return res.status(201).json({
         success: true,
@@ -131,7 +131,11 @@ module.exports = {
       console.error("Error stack:", err.stack);
       return res
         .status(500)
-        .json({ success: false, message: "Internal server error.", error: err.message });
+        .json({
+          success: false,
+          message: "Internal server error.",
+          error: err.message,
+        });
     }
   },
 
@@ -141,7 +145,8 @@ module.exports = {
       const { teacherId } = req.params;
 
       const teacher = await Teacher.findOne({ _id: teacherId })
-        .populate("classes", "name grade section year").populate("schoolId", "name")
+        .populate("classes", "name grade section year")
+        .populate("schoolId", "name")
         .select("-__v");
 
       if (!teacher) {
@@ -249,13 +254,31 @@ module.exports = {
     try {
       const { teacherId } = req.params;
 
-      const deleted = await Teacher.findByIdAndDelete(teacherId);
+      // 1) Validate teacherId
+      if (!mongoose.Types.ObjectId.isValid(teacherId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid teacherId." });
+      }
 
-      if (!deleted) {
+      // 2) Load the teacher to get its schoolId
+      const teacher = await Teacher.findById(teacherId);
+      if (!teacher) {
         return res
           .status(404)
           .json({ success: false, message: "Teacher not found." });
       }
+
+      // 3) Remove reference from School.teachers
+      await School.findByIdAndUpdate(teacher.schoolId, {
+        $pull: { teachers: teacher._id },
+      });
+
+      // 4) Delete the Teacher document
+      await Teacher.findByIdAndDelete(teacherId);
+
+      // 5) Delete the corresponding User document
+      await User.findByIdAndDelete(teacherId);
 
       return res.status(200).json({
         success: true,
