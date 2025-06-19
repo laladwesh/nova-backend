@@ -17,6 +17,7 @@
 
 const bcrypt = require("bcryptjs");
 const { User } = require("../models"); // adjust path if needed
+const { get } = require("mongoose");
 
 // Static list of allowed roles
 const ALLOWED_ROLES = ["school_admin", "teacher", "student", "parent"];
@@ -327,6 +328,33 @@ module.exports = {
       });
     } catch (err) {
       console.error("UserController.getImage error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  },
+  getUserById: async (req, res) => {
+    try {
+      const userId = req.params.id;
+      if (!userId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User ID is required." });
+      }
+
+      const user = await User.findById(userId).select("-password -__v").populate("schoolId", "name");
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: user,
+      });
+    } catch (err) {
+      console.error("UserController.getUserById error:", err);
       return res
         .status(500)
         .json({ success: false, message: "Internal server error." });

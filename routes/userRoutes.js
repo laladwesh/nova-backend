@@ -8,7 +8,7 @@ const express = require("express");
 const router = express.Router();
 
 // Middleware to verify authentication and admin role
-const { authenticate, isAdmin } = require("../middleware/authMiddleware");
+const { authenticate, isAdmin, isSuperAdminAuth } = require("../middleware/authMiddleware");
 // Controller with business logic for user operations
 const userController = require("../controllers/userController");
 const { route } = require("./authRoutes");
@@ -27,6 +27,16 @@ router.get(
   authenticate,            // Ensure the request has a valid auth token
   userController.getProfile // Handler returns user profile from req.user
 );
+
+
+
+router.get('/:id',
+  authenticate,
+  isSuperAdminAuth,            // Ensure the request has a valid auth token
+  userController.getUserById // Handler retrieves user profile by ID
+);
+
+
 
 /**
  * PUT '/me'

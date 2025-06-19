@@ -128,7 +128,7 @@ module.exports = {
       const { teacherId } = req.params;
 
       const teacher = await Teacher.findOne({ _id: teacherId })
-        .populate("classes", "name grade section year")
+        .populate("classes", "name grade section year").populate("schoolId", "name")
         .select("-__v");
 
       if (!teacher) {

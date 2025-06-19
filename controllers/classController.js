@@ -113,9 +113,9 @@ module.exports = {
   getClassById: async (req, res) => {
     try {
       const { classId } = req.params;
-      const classDoc = await Class.findById(classId)
+      const classDoc = await Class.findById(classId).select("-__v")
         .populate("teachers", "name email teacherId")
-        .populate("students", "name studentId");
+        .populate("students", "name studentId").populate("schoolId", "name");
 
       if (!classDoc) {
         return res

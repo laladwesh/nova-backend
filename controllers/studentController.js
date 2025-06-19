@@ -195,7 +195,7 @@ module.exports = {
       }
 
       const student = await Student.findOne(query)
-        .populate("classId", "name grade section year")
+        .populate("classId", "name grade section year").populate("schoolId", "name").populate("parents", "name email phone")
         .select("-__v");
 
       // Handle not found

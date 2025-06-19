@@ -14,5 +14,11 @@ router.get(
   isSuperAdminAuth,
   require("../controllers/parentController").getParentWithFullDetails
 );
+router.put(
+  "/:id",
+  authenticate,
+  isSuperAdminAuth,
+  require("../controllers/parentController").updateParent
+);
 
 module.exports = router;
