@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { FaSignOutAlt } from "react-icons/fa";
+import { FaSignOutAlt, FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 export default function SuperAdminPage() {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newSchool, setNewSchool] = useState({
+    name: "",
+    secretKey: "",
+    address: "",
+    phone: "",
+    email: "",
+  });
+  const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -63,19 +72,168 @@ export default function SuperAdminPage() {
     }
   };
 
+  const handleAddSchool = async (e) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      
+      // Create school
+      const schoolRes = await fetch("/api/schools", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(newSchool),
+      });
+      const schoolBody = await schoolRes.json();
+      
+      if (!schoolRes.ok || !schoolBody.success) {
+        throw new Error(schoolBody.message || "Failed to create school");
+      }
+
+      // Create school admin user
+      const userRes = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          name: newSchool.name,
+          email: newSchool.email,
+          password: newSchool.secretKey,
+          role: "school_admin",
+          schoolId: schoolBody.data.school._id
+        }),
+      });
+      const userBody = await userRes.json();
+      
+      if (!userRes.ok || !userBody.success) {
+        console.warn("School created but admin user creation failed:", userBody.message);
+      }
+
+      setSchools((prev) => [...prev, schoolBody.data.school]);
+      setShowAddForm(false);
+      setNewSchool({
+        name: "",
+        secretKey: "",
+        address: "",
+        phone: "",
+        email: "",
+      });
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 p-8">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-extrabold text-gray-800">All Schools</h1>
-        <button
-          onClick={handleLogout}
-          className="flex items-center text-red-600 hover:text-red-800 transition"
-        >
-          <FaSignOutAlt className="mr-2 text-lg" />
-          Logout
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+          >
+            <FaPlus className="mr-2" />
+            Add School
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center text-red-600 hover:text-red-800 transition"
+          >
+            <FaSignOutAlt className="mr-2 text-lg" />
+            Logout
+          </button>
+        </div>
       </div>
+
+      {/* Add School Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-4">Add New School</h2>
+            <form onSubmit={handleAddSchool}>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="School Name"
+                  value={newSchool.name}
+                  onChange={(e) =>
+                    setNewSchool((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  className="w-full p-3 border rounded-lg"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Secret Key"
+                  value={newSchool.secretKey}
+                  onChange={(e) =>
+                    setNewSchool((prev) => ({
+                      ...prev,
+                      secretKey: e.target.value,
+                    }))
+                  }
+                  className="w-full p-3 border rounded-lg"
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Address"
+                  value={newSchool.address}
+                  onChange={(e) =>
+                    setNewSchool((prev) => ({ ...prev, address: e.target.value }))
+                  }
+                  className="w-full p-3 border rounded-lg"
+                  required
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={newSchool.phone}
+                  onChange={(e) =>
+                    setNewSchool((prev) => ({ ...prev, phone: e.target.value }))
+                  }
+                  className="w-full p-3 border rounded-lg"
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={newSchool.email}
+                  onChange={(e) =>
+                    setNewSchool((prev) => ({ ...prev, email: e.target.value }))
+                  }
+                  className="w-full p-3 border rounded-lg"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {isCreating ? "Creating..." : "Create School"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Loading / Error */}
       {loading && <p className="text-gray-600">Loading schools…</p>}

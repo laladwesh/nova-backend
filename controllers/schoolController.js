@@ -1,123 +1,45 @@
-// controllers/schoolController.js
-const { School } = require("../models");
+exports.listSchools = async (req, res) => {
+  // Get schoolId from query params only (since route has no :schoolId param)
+  const schoolId = req.query.schoolId;
 
-/**
- * POST /schools
- * Create a new School record.
- *
- * Body JSON:
- * {
- *   "name": "Eastside High School",
- *   "token": "EAST123TOKEN",   // optional
- *   "address": "123 Main St, City, State",
- *   "phone": "555-123-4567"
- * }
- *
- * Response (201 Created):
- * {
- *   "success": true,
- *   "message": "School created successfully",
- *   "data": {
- *     "school": {
- *       "_id": "...",
- *       "name": "Eastside High School",
- *       "token": "EAST123TOKEN",
- *       "address": "123 Main St, City, State",
- *       "phone": "555-123-4567",
- *       "createdAt": "...",
- *       "updatedAt": "..."
- *     }
- *   }
- * }
- */
-exports.createSchool = async (req, res) => {
-  try {
-    const { name, token, address, phone, email } = req.body;
-
-    if (!name) {
-      return res.status(400).json({
+  // If no schoolId is provided, proceed with listing all schools
+  if (!schoolId) {
+    try {
+      const schools = await School.find().sort({ createdAt: -1 });
+      return res.status(200).json({
+        success: true,
+        data: { schools },
+      });
+    } catch (err) {
+      console.error("schoolController.listSchools error:", err);
+      return res.status(500).json({
         success: false,
-        message: "School name is required.",
+        message: "Internal server error.",
       });
     }
-
-    // If you want to enforce unique token:
-    if (token) {
-      const existing = await School.findOne({ token });
-      if (existing) {
-        return res.status(409).json({
+  } else {
+    // If schoolId is provided, fetch that specific school
+    try {
+      const school = await School.findById(schoolId);
+      
+      if (!school) {
+        return res.status(404).json({
           success: false,
-          message: "Token already in use by another school.",
+          message: "School not found.",
         });
       }
+      
+      return res.status(200).json({
+        success: true,
+        data: { school },
+      });
+    } catch (err) {
+      console.error("schoolController.listSchools error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error.",
+      });
     }
-
-    // Build the new School document:
-    const newSchoolData = { name };
-    if (token) newSchoolData.token = token.trim();
-    if (address) newSchoolData.address = address.trim();
-    if (phone) newSchoolData.phone = phone.trim();
-    if (email) {
-      newSchoolData.email = email.trim();
-      // Optional: Validate email format if needed
-      // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      // if (!emailRegex.test(newSchoolData.email)) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: "Invalid email format.",
-      //   });
-      // }
-    }
-
-    const school = await School.create(newSchoolData);
-
-    return res.status(201).json({
-      success: true,
-      message: "School created successfully",
-      data: {
-        school,
-      },
-    });
-  } catch (err) {
-    console.error("schoolController.createSchool error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error.",
-    });
-  }
-};
-
-/**
- * GET /schools
- * (Optional) List all Schools—useful for an admin‐panel.
- *
- * Headers: Authorization: Bearer <accessToken>   (Admin only)
- * Query Params (optional): none
- *
- * Response (200):
- * {
- *   "success": true,
- *   "data": {
- *     "schools": [
- *       { "_id": "...", "name": "Eastside", "token": "...", ... },
- *       { "_id": "...", "name": "Westside", "token": "...", ... }
- *     ]
- *   }
- * }
- */
-exports.listSchools = async (req, res) => {
-  try {
-    const schools = await School.find().sort({ createdAt: -1 });
-    return res.status(200).json({
-      success: true,
-      data: { schools },
-    });
-  } catch (err) {
-    console.error("schoolController.listSchools error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error.",
-    });
   }
 };
 
@@ -126,45 +48,45 @@ exports.getSchoolWithFullDetails = async (req, res) => {
     const school = await School.findById(req.params.id)
       // Admins (User model)
       .populate({
-        path: "admins",
-        select: "name email role",
+        path: 'admins',
+        select: 'name email role'
       })
       // Teachers
       .populate({
-        path: "teachers",
-        select: "teacherId name email phone roles teachingSubs",
+        path: 'teachers',
+        select: 'teacherId name email phone roles teachingSubs'
       })
       // Students
       .populate({
-        path: "students",
-        select: "studentId name email phone gender dob address feePaid",
+        path: 'students',
+        select: 'studentId name email phone gender dob address feePaid'
       })
       // Classes
       .populate({
-        path: "classes",
-        select: "name grade section year subjects analytics",
+        path: 'classes',
+        select: 'name grade section year subjects analytics'
       })
       // Parents
       .populate({
-        path: "parents",
-        select: "name email phone students",
+        path: 'parents',
+        select: 'name email phone students'
       })
       .lean();
 
     if (!school) {
       return res
         .status(404)
-        .json({ success: false, message: "School not found." });
+        .json({ success: false, message: 'School not found.' });
     }
 
     return res.json({
       success: true,
-      data: { school },
+      data: { school }
     });
   } catch (err) {
-    console.error("getSchoolWithFullDetails error:", err);
+    console.error('getSchoolWithFullDetails error:', err);
     return res
       .status(500)
-      .json({ success: false, message: "Internal server error." });
+      .json({ success: false, message: 'Internal server error.' });
   }
 };
