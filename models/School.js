@@ -34,6 +34,7 @@ const SchoolSchema = new Schema(
     phone:   { type: String, default: "" },
     email:   { type: String, default: "", unique: true},
     isActive: { type: Boolean, default: true },
+    secretKey: { type: String, default: "" },
   },
   { timestamps: true }
 );

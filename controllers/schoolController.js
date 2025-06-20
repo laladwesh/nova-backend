@@ -1,26 +1,60 @@
-const School = require('../models/School');
+const School = require("../models/School");
 
 const createSchool = async (req, res) => {
   try {
-    // Add your school creation logic here
-    // This is a placeholder implementation
-    const schoolData = req.body;
-    
-    // Validate required fields
-    if (!schoolData.name) {
-      return res.status(400).json({ message: 'School name is required' });
+    const { name, address = "", phone = "", email , secretKey } = req.body;
+
+    // 1) Required fields
+    if (!name || !email) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Both name and email are required" });
     }
-    
-    // Add school creation logic here
-    // const newSchool = await School.create(schoolData);
-    
-    res.status(201).json({ 
-      message: 'School created successfully',
-      // school: newSchool 
+
+    // 2) Uniqueness check
+    const exists = await School.findOne({
+      $or: [{ name: name.trim() }, { email: email.trim().toLowerCase() }],
+    });
+    if (exists) {
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message: "School name or email already in use",
+        });
+    }
+
+    // 3) Create and save
+    const newSchool = await School.create({
+      name: name.trim(),
+      address: address.trim(),
+      phone: phone.trim(),
+      email: email.trim().toLowerCase(),
+      secretKey: secretKey ? secretKey.trim() : "",
+    });
+
+    // 4) Success response
+    return res.status(201).json({
+      success: true,
+      data: { school: newSchool },
     });
   } catch (error) {
-    console.error('Error creating school:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error creating school:", error);
+
+    // Handle duplicate-key errors from MongoDB
+    if (error.code === 11000) {
+      const dupField = Object.keys(error.keyPattern)[0];
+      return res.status(409).json({
+        success: false,
+        message: `${dupField} already exists.`,
+      });
+    }
+
+    // Fallback for all other errors
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 
@@ -47,14 +81,14 @@ const listSchools = async (req, res) => {
     // If schoolId is provided, fetch that specific school
     try {
       const school = await School.findById(schoolId);
-      
+
       if (!school) {
         return res.status(404).json({
           success: false,
           message: "School not found.",
         });
       }
-      
+
       return res.status(200).json({
         success: true,
         data: { school },
@@ -74,51 +108,51 @@ const getSchoolWithFullDetails = async (req, res) => {
     const school = await School.findById(req.params.id)
       // Admins (User model)
       .populate({
-        path: 'admins',
-        select: 'name email role'
+        path: "admins",
+        select: "name email role",
       })
       // Teachers
       .populate({
-        path: 'teachers',
-        select: 'teacherId name email phone roles teachingSubs'
+        path: "teachers",
+        select: "teacherId name email phone roles teachingSubs",
       })
       // Students
       .populate({
-        path: 'students',
-        select: 'studentId name email phone gender dob address feePaid'
+        path: "students",
+        select: "studentId name email phone gender dob address feePaid",
       })
       // Classes
       .populate({
-        path: 'classes',
-        select: 'name grade section year subjects analytics'
+        path: "classes",
+        select: "name grade section year subjects analytics",
       })
       // Parents
       .populate({
-        path: 'parents',
-        select: 'name email phone students'
+        path: "parents",
+        select: "name email phone students",
       })
       .lean();
 
     if (!school) {
       return res
         .status(404)
-        .json({ success: false, message: 'School not found.' });
+        .json({ success: false, message: "School not found." });
     }
 
     return res.json({
       success: true,
-      data: { school }
+      data: { school },
     });
   } catch (err) {
-    console.error('getSchoolWithFullDetails error:', err);
+    console.error("getSchoolWithFullDetails error:", err);
     return res
       .status(500)
-      .json({ success: false, message: 'Internal server error.' });
+      .json({ success: false, message: "Internal server error." });
   }
 };
 
 module.exports = {
   createSchool,
   listSchools,
-  getSchoolWithFullDetails
+  getSchoolWithFullDetails,
 };

@@ -117,6 +117,7 @@ export default function SuperAdminPage() {
           name: newSchool.name,
           email: newSchool.email,
           password: newSchool.secretKey,
+          secretKey: process.env.REACT_APP_SUPER_ADMIN_SECRET_KEY,
           role: "school_admin",
           schoolId: schoolBody.data.school._id,
         }),
