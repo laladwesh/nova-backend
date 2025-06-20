@@ -57,7 +57,23 @@ async function authenticate(req, res, next) {
       role:     user.role,
       schoolId: user.schoolId?.toString() || null
     };
-
+    if(req.user.schoolId) {
+      if(user.role === "super_admin") {
+        // Super-admins bypass school checks
+        return next();
+      }
+      const school = await School.findById(user.schoolId).select("isActive");
+      if (!school) {
+        return res
+          .status(404)
+          .json({ success: false, message: "School not found." });
+      }
+      if (!school.isActive) {
+        return res
+          .status(403)
+          .json({ success: false, message: "This school is inactive." });   
+      }
+    }
     // 5) Super-admins bypass all school checks
     if (req.user.role === "super_admin") {
       return next();
