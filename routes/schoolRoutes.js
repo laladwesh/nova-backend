@@ -34,4 +34,4 @@ router.get(
 
 router.post("/", authenticate, isSuperAdminAuth, schoolController.createSchool);
 
-module.exports = router;
+module.exports = router;

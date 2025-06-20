@@ -1,4 +1,30 @@
-exports.listSchools = async (req, res) => {
+const School = require('../models/School');
+
+const createSchool = async (req, res) => {
+  try {
+    // Add your school creation logic here
+    // This is a placeholder implementation
+    const schoolData = req.body;
+    
+    // Validate required fields
+    if (!schoolData.name) {
+      return res.status(400).json({ message: 'School name is required' });
+    }
+    
+    // Add school creation logic here
+    // const newSchool = await School.create(schoolData);
+    
+    res.status(201).json({ 
+      message: 'School created successfully',
+      // school: newSchool 
+    });
+  } catch (error) {
+    console.error('Error creating school:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const listSchools = async (req, res) => {
   // Get schoolId from query params only (since route has no :schoolId param)
   const schoolId = req.query.schoolId;
 
@@ -43,7 +69,7 @@ exports.listSchools = async (req, res) => {
   }
 };
 
-exports.getSchoolWithFullDetails = async (req, res) => {
+const getSchoolWithFullDetails = async (req, res) => {
   try {
     const school = await School.findById(req.params.id)
       // Admins (User model)
@@ -89,4 +115,10 @@ exports.getSchoolWithFullDetails = async (req, res) => {
       .status(500)
       .json({ success: false, message: 'Internal server error.' });
   }
+};
+
+module.exports = {
+  createSchool,
+  listSchools,
+  getSchoolWithFullDetails
 };
