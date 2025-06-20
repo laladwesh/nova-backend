@@ -9,14 +9,14 @@ import { SchoolDetailPage } from "./pages/SchoolDetailPage.jsx";
 function PublicRoute({ children }) {
   const token = localStorage.getItem("accessToken");
   const role = localStorage.getItem("role");
-
+  const mySchool = localStorage.getItem("schoolId");
   if (token) {
     // already logged in → redirect by role
     if (role === "super_admin") {
       return <Navigate to="/superadmin" replace />;
     }
     if (role === "school_admin") {
-      return <Navigate to="/schooladmin" replace />;
+      return <Navigate to={`/schooladmin/${mySchool}`} replace />;
     }
     // fallback
     return <Navigate to="/" replace />;
