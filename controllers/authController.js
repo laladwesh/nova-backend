@@ -583,13 +583,13 @@ exports.forgotPassword = async (req, res) => {
                 </p>
                 <p style="margin-top:24px; color:#6B6E76; font-size:14px;">
                   Cheers,<br />
-                  <em>Pixel Grid Team</em>
+                  <em>PixelGrad Team</em>
                 </p>
               </td>
             </tr>
             <tr>
               <td align="center" style="background-color:#f4f4f7; padding:20px; font-size:12px; color:#A8AAAF;">
-                &copy; ${new Date().getFullYear()} PixelGrid@Novamatrixz. All rights reserved.
+                &copy; ${new Date().getFullYear()} PixelGrad@Novamatrixz. All rights reserved.
               </td>
             </tr>
           </table>
@@ -773,7 +773,7 @@ exports.renderResetPasswordForm = (req, res) => {
     </head>
     <body>
       <div class="container">
-        <h1>Welcome Pixel Grid User Reset Your Password</h1>
+        <h1>Welcome PixelGrad User Reset Your Password</h1>
         <form method="POST" action="/auth/reset-password">
           <input type="hidden" name="token" value="${rawToken}" />
           <div class="form-group">

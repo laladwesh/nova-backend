@@ -96,7 +96,7 @@ const html = `
       font-size: 0.8em;
       color: #999;
     ">
-      &copy; ${new Date().getFullYear()} Novamatrixz, PixelGrid. All rights reserved.
+      &copy; ${new Date().getFullYear()} Novamatrixz, PixelGrad. All rights reserved.
     </p>
   </div>
 `;

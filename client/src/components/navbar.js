@@ -48,7 +48,7 @@ const Navbar = () => {
           <div className="hidden lg:block ml-8">
             <a href='/pixelgrid' target="_blank" rel="noopener noreferrer">
               <button className="bg-[#a9f00f] text-black font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md">
-                PixelGrid
+                PixelGrad
               </button>
             </a>
           </div>
