@@ -137,3 +137,5 @@ dist
 
 # Firebase credentials
 config/*firebase*adminsdk*.json
+
+adminSeed.js
