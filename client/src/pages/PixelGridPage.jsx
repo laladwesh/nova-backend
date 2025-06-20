@@ -23,11 +23,14 @@ export default function PixelGridPage() {
       return;
     }
 
-    // 2) Store JWT and role
+    // 2) Store JWT, role, and schoolId
     const { accessToken } = loginData.data.tokens;
-    const { role }        = loginData.data.user;
+    const { role, schoolId } = loginData.data.user;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('role', role);
+    if (schoolId) {
+      localStorage.setItem('schoolId', schoolId);
+    }
 
     // 3) Check super-admin via backend
     const superRes = await fetch('/api/superadmin', {
@@ -42,9 +45,18 @@ export default function PixelGridPage() {
 
     // 4) Route accordingly
     if (superRes.ok && superData.success) {
-      navigate('/superadmin');
+      // confirmed super_admin
+      navigate('/superadmin', { replace: true });
+    } else if (role === 'school_admin') {
+      // school_admin must have a schoolId
+      if (!schoolId) {
+        setError('Your account is missing a school assignment.');
+      } else {
+        navigate(`/schooladmin/${schoolId}`, { replace: true });
+      }
     } else {
-      navigate('/schooladmin');
+      // fallback for any other role
+      navigate('/', { replace: true });
     }
   };
 
@@ -54,9 +66,7 @@ export default function PixelGridPage() {
         <h2 className="text-center text-2xl font-semibold text-white mb-6">
           Admin Portal
         </h2>
-        {error && (
-          <p className="text-red-400 text-center mb-4">{error}</p>
-        )}
+        {error && <p className="text-red-400 text-center mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-gray-300 mb-1">Email</label>
