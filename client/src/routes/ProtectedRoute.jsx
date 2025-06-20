@@ -9,8 +9,9 @@ export function ProtectedRoute({ children }) {
 export function SuperAdminRoute({ children }) {
   const token = localStorage.getItem("accessToken");
   const role = localStorage.getItem("role");
+  const mySchool = localStorage.getItem("schoolId");
   if (!token) return <Navigate to="/" replace />;
-  if (role !== "super_admin") return <Navigate to="/schooladmin" replace />;
+  if (role !== "super_admin") return <Navigate to={`/schooladmin/${mySchool}`} replace />;
   return children;
 }
 
