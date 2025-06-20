@@ -11,6 +11,7 @@ const router = express.Router();
 const {
   authenticate,
   isSuperAdminAuth,
+  validateBulkRows,
 } = require("../middleware/authMiddleware");
 // Controller with business logic for authentication operations
 const authController = require("../controllers/authController");
@@ -101,5 +102,15 @@ router.patch(
   isSuperAdminAuth,
   authController.toggleSchoolActive
 );
+
+
+
+ router.post(
+   "/bulk-upload",
+   authenticate,            // must be logged in…
+   isSuperAdminAuth,        // …and be a super-admin (or school_admin)
+   validateBulkRows,        // ensure req.body.rows is a non-empty array
+   authController.bulkSignup
+ );
 // Export configured router to mount in main application
 module.exports = router;

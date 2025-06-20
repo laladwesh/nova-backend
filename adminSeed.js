@@ -14,8 +14,8 @@ async function seedSuperAdmins() {
 
     // 2) define your two super-admins
     const admins = [
-      { name: 'Super Admin One', email: 'super@you.com', password: 'SuperPass123!' },
-      { name: 'Super Admin Two', email: 'other@you.com', password: 'OtherPass123!' }
+      { name: 'Super Admin One', email: 'laladwesh@gmail.com', password: 'SuperPass123!' },
+      { name: 'Super Admin Two', email: 'guptaavinash302@gmail.com', password: 'OtherPass123!' }
     ];
 
     for (const a of admins) {

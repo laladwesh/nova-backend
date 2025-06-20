@@ -206,58 +206,61 @@ exports.signup = async (req, res) => {
 
       // 4) Create Parent Users & Parent docs
       const createdParentIds = [];
-for (const p of parentInputs) {
-    const emailNorm = p.email.toLowerCase().trim();
+      for (const p of parentInputs) {
+        const emailNorm = p.email.toLowerCase().trim();
 
-    // 3a) Try to find an existing parent User
-    let parentUser = await User.findOne({ email: emailNorm, role: "parent" });
-    let parentDoc;
-
-    if (parentUser) {
-      // — parent user exists: fetch or create their Parent doc
-      parentDoc = await Parent.findById(parentUser._id);
-      if (!parentDoc) {
-        // weird edge case: create missing Parent doc
-        parentDoc = await Parent.create({
-          _id:       parentUser._id,
-          name:      p.name.trim(),
-          email:     emailNorm,
-          phone:     p.phone?.trim(),
-          schoolId:  schoolRecord._id,
-          students:  [studentDoc._id],
+        // 3a) Try to find an existing parent User
+        let parentUser = await User.findOne({
+          email: emailNorm,
+          role: "parent",
         });
-      } else {
-        // add student to their students array if not already present
-        if (!parentDoc.students.includes(studentDoc._id)) {
-          parentDoc.students.push(studentDoc._id);
-          await parentDoc.save();
+        let parentDoc;
+
+        if (parentUser) {
+          // — parent user exists: fetch or create their Parent doc
+          parentDoc = await Parent.findById(parentUser._id);
+          if (!parentDoc) {
+            // weird edge case: create missing Parent doc
+            parentDoc = await Parent.create({
+              _id: parentUser._id,
+              name: p.name.trim(),
+              email: emailNorm,
+              phone: p.phone?.trim(),
+              schoolId: schoolRecord._id,
+              students: [studentDoc._id],
+            });
+          } else {
+            // add student to their students array if not already present
+            if (!parentDoc.students.includes(studentDoc._id)) {
+              parentDoc.students.push(studentDoc._id);
+              await parentDoc.save();
+            }
+          }
+        } else {
+          // 3b) No existing parent: create both User + Parent
+          const saltP = await bcrypt.genSalt(12);
+          const hashedParentPwd = await bcrypt.hash(p.password.trim(), saltP);
+
+          parentUser = await User.create({
+            name: p.name.trim(),
+            email: emailNorm,
+            password: hashedParentPwd,
+            role: "parent",
+            schoolId: schoolRecord._id,
+          });
+
+          parentDoc = await Parent.create({
+            _id: parentUser._id,
+            name: p.name.trim(),
+            email: emailNorm,
+            phone: p.phone?.trim(),
+            schoolId: schoolRecord._id,
+            students: [studentDoc._id],
+          });
         }
+
+        createdParentIds.push(parentUser._id);
       }
-    } else {
-      // 3b) No existing parent: create both User + Parent
-      const saltP = await bcrypt.genSalt(12);
-      const hashedParentPwd = await bcrypt.hash(p.password.trim(), saltP);
-
-      parentUser = await User.create({
-        name:     p.name.trim(),
-        email:    emailNorm,
-        password: hashedParentPwd,
-        role:     "parent",
-        schoolId: schoolRecord._id,
-      });
-
-      parentDoc = await Parent.create({
-        _id:       parentUser._id,
-        name:      p.name.trim(),
-        email:     emailNorm,
-        phone:     p.phone?.trim(),
-        schoolId:  schoolRecord._id,
-        students:  [studentDoc._id],
-      });
-    }
-
-    createdParentIds.push(parentUser._id);
-  }
 
       // 5) Link this student into the School
       await School.findByIdAndUpdate(
@@ -785,25 +788,219 @@ exports.renderResetPasswordForm = (req, res) => {
   `);
 };
 
-
-
 // PATCH /api/auth/school/:schoolId
 exports.toggleSchoolActive = async (req, res) => {
   try {
     const { schoolId } = req.params;
     const school = await School.findById(schoolId);
     if (!school) {
-      return res.status(404).json({ success: false, message: "School not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "School not found." });
     }
     school.isActive = !school.isActive;
     await school.save();
     return res.json({
       success: true,
       data: { school },
-      message: `School is now ${school.isActive ? "active" : "inactive"}.`
+      message: `School is now ${school.isActive ? "active" : "inactive"}.`,
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, message: "Internal server error." });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
   }
+};
+
+/**
+ * POST /auth/bulk-upload
+ * Creates many teachers & students from an array of row-objects.
+ * Each row must have at least: name, email, password, role.
+ * If role === 'student', must also include studentId & classId.
+ */
+// controllers/authController.js
+
+// controllers/authController.js
+
+exports.bulkSignup = async (req, res) => {
+  const { rows = [], schoolId } = req.body;
+  let successCount = 0;
+  const failures = [];
+
+  // 1) Verify school exists
+  const schoolRecord = await School.findById(schoolId);
+  if (!schoolRecord) {
+    return res.status(404).json({ success: false, message: "Invalid schoolId." });
+  }
+
+  // 2) Loop through each row
+  for (const [idx, row] of rows.entries()) {
+    try {
+      const {
+        name,
+        email,
+        password,
+        role,
+        gender,
+        dob,
+        phone,
+        address,
+        studentId,
+        classId,
+        parents,           // raw value from Excel
+      } = row;
+
+      // Basic validation
+      if (!name || !email || !password || !role) {
+        throw new Error("Missing name, email, password or role");
+      }
+      if (!["teacher", "student"].includes(role)) {
+        throw new Error("Role must be 'teacher' or 'student'");
+      }
+      if (role === "student" && (!studentId || !classId)) {
+        throw new Error("studentId and classId required for student");
+      }
+
+      // Unique email check
+      const existing = await User.findOne({ email: email.toLowerCase().trim() });
+      if (existing) {
+        throw new Error("Email already in use");
+      }
+
+      // Hash password
+      const salt   = await bcrypt.genSalt(12);
+      const hashed = await bcrypt.hash(password.trim(), salt);
+
+      // Create the User
+      const newUser = await User.create({
+        name:      name.trim(),
+        email:     email.toLowerCase().trim(),
+        password:  hashed,
+        role,
+        schoolId:  schoolRecord._id,
+        gender:    gender?.trim(),
+        dob:       dob ? new Date(dob) : undefined,
+        phone:     phone?.trim(),
+        address:   address?.trim(),
+        ...(role === "student" && { studentId: studentId.trim(), classId })
+      });
+
+      // Teacher wiring
+      if (role === "teacher") {
+        await Teacher.create({
+          _id:       newUser._id,
+          teacherId: crypto.randomBytes(4).toString("hex"),
+          name:      newUser.name,
+          email:     newUser.email,
+          schoolId:  schoolRecord._id,
+        });
+        await School.findByIdAndUpdate(schoolRecord._id, { $push: { teachers: newUser._id } });
+      } else {
+        // STUDENT wiring
+
+        // 2a) parse parents JSON if needed
+        let parentInputs = parents;
+        if (typeof parentInputs === "string") {
+          try {
+            parentInputs = JSON.parse(parentInputs);
+          } catch {
+            parentInputs = [];
+          }
+        }
+
+        // 2b) ensure at least one parent
+        if (!Array.isArray(parentInputs) || parentInputs.length === 0) {
+          throw new Error("Must supply parents array for student");
+        }
+
+        // 3) Create the Student record
+        const studentDoc = await Student.create({
+          _id:       newUser._id,
+          studentId: studentId.trim(),
+          name:      newUser.name,
+          classId,
+          gender:    gender?.trim(),
+          dob:       dob ? new Date(dob) : undefined,
+          email:     newUser.email,
+          phone:     phone?.trim(),
+          address:   address?.trim(),
+          schoolId:  schoolRecord._id,
+        });
+
+        // 4) For each parent, either find-or-create User + Parent doc
+        const createdParentIds = [];
+        for (const p of parentInputs) {
+          if (!p.name || !p.email || !p.password) {
+            throw new Error("Each parent needs name, email, and password");
+          }
+          const parentEmail = p.email.toLowerCase().trim();
+          let parentUser = await User.findOne({ email: parentEmail, role: "parent" });
+          let parentDoc;
+
+          if (parentUser) {
+            parentDoc = await Parent.findById(parentUser._id);
+            if (!parentDoc) {
+              parentDoc = await Parent.create({
+                _id:       parentUser._id,
+                name:      p.name.trim(),
+                email:     parentEmail,
+                phone:     p.phone?.trim(),
+                schoolId:  schoolRecord._id,
+                students:  [studentDoc._id],
+              });
+            } else if (!parentDoc.students.includes(studentDoc._id)) {
+              parentDoc.students.push(studentDoc._id);
+              await parentDoc.save();
+            }
+          } else {
+            const saltP       = await bcrypt.genSalt(12);
+            const hashedP     = await bcrypt.hash(p.password.trim(), saltP);
+            parentUser = await User.create({
+              name:     p.name.trim(),
+              email:    parentEmail,
+              password: hashedP,
+              role:     "parent",
+              schoolId: schoolRecord._id,
+            });
+            parentDoc = await Parent.create({
+              _id:       parentUser._id,
+              name:      p.name.trim(),
+              email:     parentEmail,
+              phone:     p.phone?.trim(),
+              schoolId:  schoolRecord._id,
+              students:  [studentDoc._id],
+            });
+          }
+          createdParentIds.push(parentUser._id);
+        }
+
+        // 5) Link student & parents into School
+        await School.findByIdAndUpdate(schoolRecord._id, {
+          $addToSet: {
+            students: studentDoc._id,
+            parents:  { $each: createdParentIds }
+          }
+        });
+
+        // 6) Attach parents list to Student and save
+        studentDoc.parents = createdParentIds;
+        await studentDoc.save();
+
+        // 7) Add student to Class
+        await Class.findByIdAndUpdate(classId, { $push: { students: studentDoc._id } });
+      }
+
+      successCount++;
+    } catch (err) {
+      failures.push({ row: idx, error: err.message });
+    }
+  }
+
+  // 3) Return final report
+  return res.status(200).json({
+    success:      true,
+    successCount,
+    failures
+  });
 };

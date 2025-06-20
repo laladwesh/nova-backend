@@ -195,6 +195,18 @@ function superAdminAuth(req, res, next) {
   next();
 }
 
+function validateBulkRows(req, res, next) {
+  const { rows } = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Request must include a non-empty rows array." });
+  }
+  next();
+};
+
+
+
 module.exports = {
   authenticate,
   isAdmin,
@@ -203,4 +215,5 @@ module.exports = {
   isParent,
   superAdminAuth,
   isSuperAdminAuth,
+  validateBulkRows
 };
