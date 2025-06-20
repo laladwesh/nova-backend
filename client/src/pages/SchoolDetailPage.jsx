@@ -241,7 +241,7 @@ export const SchoolDetailPage = () => {
   return (
     <>
       <Toaster position="top-right" />
-      <div className="min-h-screen hide-scrollbar bg-gray-100 py-8 px-16">
+      <div className="min-h-screen hide-scrollbar  bg-gradient-to-br from-blue-300 to-blue-200 py-8 px-16">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button

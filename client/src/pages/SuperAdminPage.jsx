@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaSignOutAlt, FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function SuperAdminPage() {
   const [schools, setSchools] = useState([]);
@@ -15,6 +16,7 @@ export default function SuperAdminPage() {
     email: "",
   });
   const [isCreating, setIsCreating] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -38,10 +40,13 @@ export default function SuperAdminPage() {
         if (res.ok && body.success) {
           setSchools(body.data.schools);
         } else {
-          setError(body.message || "Failed to load schools");
+          const msg = body.message || "Failed to load schools";
+          setError(msg);
+          toast.error(msg);
         }
-      } catch {
+      } catch (err) {
         setError("Network error");
+        toast.error("Network error");
       } finally {
         setLoading(false);
       }
@@ -50,6 +55,8 @@ export default function SuperAdminPage() {
 
   // Toggle isActive on the server, then update local state
   const handleToggle = async (id) => {
+    const toastId = toast.loading("Updating status...");
+    setTogglingId(id);
     try {
       const token = localStorage.getItem("accessToken");
       const res = await fetch(`/api/auth/school/${id}`, {
@@ -67,17 +74,23 @@ export default function SuperAdminPage() {
           s._id === id ? { ...s, isActive: body.data.school.isActive } : s
         )
       );
+      toast.success(
+        `School ${body.data.school.isActive ? "activated" : "deactivated"}`,
+        { id: toastId }
+      );
     } catch (err) {
-      alert("Could not toggle school: " + err.message);
+      toast.error(`Could not toggle school: ${err.message}`, { id: toastId });
+    } finally {
+      setTogglingId(null);
     }
   };
 
   const handleAddSchool = async (e) => {
     e.preventDefault();
+    const toastId = toast.loading("Creating school...");
     setIsCreating(true);
     try {
       const token = localStorage.getItem("accessToken");
-      
       // Create school
       const schoolRes = await fetch("/api/schools", {
         method: "POST",
@@ -88,10 +101,10 @@ export default function SuperAdminPage() {
         body: JSON.stringify(newSchool),
       });
       const schoolBody = await schoolRes.json();
-      
       if (!schoolRes.ok || !schoolBody.success) {
         throw new Error(schoolBody.message || "Failed to create school");
       }
+      toast.success("School created successfully", { id: toastId });
 
       // Create school admin user
       const userRes = await fetch("/api/auth/signup", {
@@ -105,13 +118,18 @@ export default function SuperAdminPage() {
           email: newSchool.email,
           password: newSchool.secretKey,
           role: "school_admin",
-          schoolId: schoolBody.data.school._id
+          schoolId: schoolBody.data.school._id,
         }),
       });
       const userBody = await userRes.json();
-      
       if (!userRes.ok || !userBody.success) {
-        console.warn("School created but admin user creation failed:", userBody.message);
+        toast.error(`Admin user creation failed: ${userBody.message}`);
+        console.warn(
+          "School created but admin user creation failed:",
+          userBody.message
+        );
+      } else {
+        toast.success("Admin user created successfully");
       }
 
       setSchools((prev) => [...prev, schoolBody.data.school]);
@@ -124,14 +142,15 @@ export default function SuperAdminPage() {
         email: "",
       });
     } catch (err) {
-      alert("Error: " + err.message);
+      toast.error(`Error: ${err.message}`, { id: toastId });
     } finally {
       setIsCreating(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-300 to-blue-200 p-8">
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-extrabold text-gray-800">All Schools</h1>
@@ -188,7 +207,10 @@ export default function SuperAdminPage() {
                   placeholder="Address"
                   value={newSchool.address}
                   onChange={(e) =>
-                    setNewSchool((prev) => ({ ...prev, address: e.target.value }))
+                    setNewSchool((prev) => ({
+                      ...prev,
+                      address: e.target.value,
+                    }))
                   }
                   className="w-full p-3 border rounded-lg"
                   required
@@ -243,22 +265,20 @@ export default function SuperAdminPage() {
       {!loading && !error && (
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {schools.map((s) => {
-            const id = s.schoolId || s._id;
+            const id = s._id;
             return (
               <li key={id} className="relative">
                 <button
                   onClick={() => navigate(`/school/${id}`)}
-                  className={`
-                    w-full p-6 bg-white rounded-2xl shadow-lg hover:shadow-2xl
-                    transform  transition-all duration-200
-                    ${!s.isActive ? "opacity-60 filter grayscale" : ""}
-                  `}
+                  className={`w-full p-6 bg-white rounded-2xl shadow-lg hover:shadow-2xl transform transition-all duration-200 ${
+                    !s.isActive ? "opacity-60 filter grayscale" : ""
+                  }`}
                 >
                   <h2 className="text-2xl font-semibold text-gray-800 mb-2">
                     {s.name}
                   </h2>
                   <p className="text-sm text-gray-500">
-                    {s._id.slice(-6).toUpperCase()}
+                    {id.slice(-6).toUpperCase()}
                   </p>
                 </button>
 
@@ -273,7 +293,8 @@ export default function SuperAdminPage() {
                   </span>
                   <button
                     onClick={() => handleToggle(id)}
-                    className="relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none"
+                    disabled={togglingId === id}
+                    className="relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50"
                     style={{
                       backgroundColor: s.isActive ? "#4ADE80" : "#CBD5E1",
                     }}
