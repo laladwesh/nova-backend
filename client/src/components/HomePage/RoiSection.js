@@ -8,7 +8,7 @@ const RoiSection = () => {
         
         <div className="max-w-4xl mx-auto space-y-10">
           <div>
-            <h3 className="text-2xl font-semibold mb-3 text-black">40% Reduction in Support Costs</h3>
+            <h3 className="text-2xl font-semibold mb-3 text-black">90% Reduction in Support Costs</h3>
             <p className="text-black text-lg">
               Our AI solutions dramatically cut operational expenses by automating routine customer inquiries, allowing your team to focus on high-value tasks.
             </p>

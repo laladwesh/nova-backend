@@ -28,8 +28,8 @@ const ContactSection = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-white">Call Us</h4>
-                  <a href="tel:08062178128" className="text-gray-400 hover:text-[#9ae20b] transition-colors">
-                    08062178128
+                  <a href="tel:07440256485" className="text-gray-400 hover:text-[#9ae20b] transition-colors">
+                    07440256485
                   </a>
                 </div>
               </div>
