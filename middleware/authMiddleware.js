@@ -22,7 +22,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here";
  */
 async function authenticate(req, res, next) {
   try {
-    // --- JWT verify + load user ---
+    // 1) Check for Bearer token
     const auth = req.headers.authorization;
     if (!auth?.startsWith("Bearer ")) {
       return res
@@ -30,6 +30,8 @@ async function authenticate(req, res, next) {
         .json({ success: false, message: "Missing token." });
     }
     const token = auth.split(" ")[1];
+
+    // 2) Verify JWT
     let payload;
     try {
       payload = jwt.verify(token, JWT_SECRET);
@@ -39,6 +41,7 @@ async function authenticate(req, res, next) {
         .json({ success: false, message: "Invalid token." });
     }
 
+    // 3) Load user
     const user = await User.findById(payload.userId).select("-password");
     if (!user) {
       return res
@@ -46,38 +49,46 @@ async function authenticate(req, res, next) {
         .json({ success: false, message: "User not found." });
     }
 
-    // attach for downstream
+    // 4) Attach minimal user info
     req.user = {
-      _id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      schoolId: user.schoolId?.toString() || null,
+      _id:      user._id.toString(),
+      name:     user.name,
+      email:    user.email,
+      role:     user.role,
+      schoolId: user.schoolId?.toString() || null
     };
 
-    // --- Super-admin bypasses school check ---
+    // 5) Super-admins bypass all school checks
     if (req.user.role === "super_admin") {
       return next();
     }
 
-    // --- For everyone else, require + validate schoolId ---
+    // 6) See if the request actually supplied a schoolId
     const schoolId =
-      req.params.schoolId || req.body.schoolId || req.query.schoolId;
+      req.params?.schoolId ||
+      req.body?.schoolId  ||
+      req.query?.schoolId;
 
-    if (!schoolId || !mongoose.Types.ObjectId.isValid(schoolId)) {
-      return res
-        .status(403)
-        .json({ success: false, message: "A valid schoolId is required." });
+    // 7) If no schoolId, skip school-activation logic entirely
+    if (!schoolId) {
+      return next();
     }
 
-    // must match the user’s own school
+    // 8) Validate the provided schoolId
+    if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid schoolId." });
+    }
+
+    // 9) Ensure the schoolId matches the user’s own school
     if (req.user.schoolId !== schoolId) {
       return res
         .status(403)
         .json({ success: false, message: "Unauthorized school access." });
     }
 
-    // load & check isActive
+    // 10) Load the School and check isActive
     const school = await School.findById(schoolId).select("isActive");
     if (!school) {
       return res
@@ -90,13 +101,14 @@ async function authenticate(req, res, next) {
         .json({ success: false, message: "This school is inactive." });
     }
 
-    // all good
+    // 11) All checks passed
     next();
   } catch (err) {
     console.error("Auth middleware error:", err);
     res.status(500).json({ success: false, message: "Server error." });
   }
 }
+
 /**
  * 2. isAdmin
  *    - Ensures req.user.role === 'school_admin'
