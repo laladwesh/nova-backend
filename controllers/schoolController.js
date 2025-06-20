@@ -32,7 +32,7 @@ const { School } = require("../models");
  */
 exports.createSchool = async (req, res) => {
   try {
-    const { name, token, address, phone , email } = req.body;
+    const { name, token, address, phone, email } = req.body;
 
     if (!name) {
       return res.status(400).json({
@@ -126,45 +126,45 @@ exports.getSchoolWithFullDetails = async (req, res) => {
     const school = await School.findById(req.params.id)
       // Admins (User model)
       .populate({
-        path: 'admins',
-        select: 'name email role'
+        path: "admins",
+        select: "name email role",
       })
       // Teachers
       .populate({
-        path: 'teachers',
-        select: 'teacherId name email phone roles teachingSubs'
+        path: "teachers",
+        select: "teacherId name email phone roles teachingSubs",
       })
       // Students
       .populate({
-        path: 'students',
-        select: 'studentId name email phone gender dob address feePaid'
+        path: "students",
+        select: "studentId name email phone gender dob address feePaid",
       })
       // Classes
       .populate({
-        path: 'classes',
-        select: 'name grade section year subjects analytics'
+        path: "classes",
+        select: "name grade section year subjects analytics",
       })
       // Parents
       .populate({
-        path: 'parents',
-        select: 'name email phone students'
+        path: "parents",
+        select: "name email phone students",
       })
       .lean();
 
     if (!school) {
       return res
         .status(404)
-        .json({ success: false, message: 'School not found.' });
+        .json({ success: false, message: "School not found." });
     }
 
     return res.json({
       success: true,
-      data: { school }
+      data: { school },
     });
   } catch (err) {
-    console.error('getSchoolWithFullDetails error:', err);
+    console.error("getSchoolWithFullDetails error:", err);
     return res
       .status(500)
-      .json({ success: false, message: 'Internal server error.' });
+      .json({ success: false, message: "Internal server error." });
   }
-}
+};

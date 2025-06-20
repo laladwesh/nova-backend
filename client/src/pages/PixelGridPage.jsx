@@ -1,43 +1,43 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function PixelGridPage() {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     // 1) Perform login
-    const loginRes  = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const loginRes = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
     const loginData = await loginRes.json();
     if (!loginRes.ok) {
-      setError(loginData.message || 'Login failed');
+      setError(loginData.message || "Login failed");
       return;
     }
 
     // 2) Store JWT, role, and schoolId
     const { accessToken } = loginData.data.tokens;
     const { role, schoolId } = loginData.data.user;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('role', role);
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("role", role);
     if (schoolId) {
-      localStorage.setItem('schoolId', schoolId);
+      localStorage.setItem("schoolId", schoolId);
     }
 
     // 3) Check super-admin via backend
-    const superRes = await fetch('/api/superadmin', {
-      method: 'POST',
+    const superRes = await fetch("/api/superadmin", {
+      method: "POST",
       headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ email }),
     });
@@ -46,17 +46,17 @@ export default function PixelGridPage() {
     // 4) Route accordingly
     if (superRes.ok && superData.success) {
       // confirmed super_admin
-      navigate('/superadmin', { replace: true });
-    } else if (role === 'school_admin') {
+      navigate("/superadmin", { replace: true });
+    } else if (role === "school_admin") {
       // school_admin must have a schoolId
       if (!schoolId) {
-        setError('Your account is missing a school assignment.');
+        setError("Your account is missing a school assignment.");
       } else {
         navigate(`/schooladmin/${schoolId}`, { replace: true });
       }
     } else {
       // fallback for any other role
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   };
 
@@ -73,7 +73,7 @@ export default function PixelGridPage() {
             <input
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-blue-500"
             />
@@ -83,7 +83,7 @@ export default function PixelGridPage() {
             <input
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-blue-500"
             />

@@ -8,7 +8,10 @@ const express = require("express");
 const router = express.Router();
 
 // Middleware to verify access token for protected routes
-const { authenticate, isSuperAdminAuth } = require("../middleware/authMiddleware");
+const {
+  authenticate,
+  isSuperAdminAuth,
+} = require("../middleware/authMiddleware");
 // Controller with business logic for authentication operations
 const authController = require("../controllers/authController");
 
@@ -24,7 +27,7 @@ const authController = require("../controllers/authController");
  */
 router.post(
   "/signup",
-  authController.signup          // Handler creates user and sends confirmation
+  authController.signup // Handler creates user and sends confirmation
 );
 
 /**
@@ -35,7 +38,7 @@ router.post(
  */
 router.post(
   "/login",
-  authController.login           // Handler verifies credentials and issues tokens
+  authController.login // Handler verifies credentials and issues tokens
 );
 
 /**
@@ -46,14 +49,12 @@ router.post(
  */
 router.post(
   "/refresh",
-  authController.refresh         // Handler validates refresh token and issues new access token
+  authController.refresh // Handler validates refresh token and issues new access token
 );
-
-
 
 router.get(
   "/reset-password/:token",
-  authController.renderResetPasswordForm     // Handler verifies email using token from signup or reset
+  authController.renderResetPasswordForm // Handler verifies email using token from signup or reset
 );
 
 /**
@@ -64,7 +65,7 @@ router.get(
  */
 router.post(
   "/forgot-password",
-  authController.forgotPassword  // Handler sends reset instructions via email
+  authController.forgotPassword // Handler sends reset instructions via email
 );
 
 /**
@@ -75,7 +76,7 @@ router.post(
  */
 router.post(
   "/reset-password",
-  authController.resetPassword   // Handler verifies reset token and updates password
+  authController.resetPassword // Handler verifies reset token and updates password
 );
 
 ///////////////////////////
@@ -90,10 +91,15 @@ router.post(
  */
 router.post(
   "/logout",
-  authenticate,                  // Require valid access token
-  authController.logout          // Handler invalidates tokens and ends session
+  authenticate, // Require valid access token
+  authController.logout // Handler invalidates tokens and ends session
 );
 
-router.patch('/school/:schoolId' , authenticate , isSuperAdminAuth ,authController.toggleSchoolActive);
+router.patch(
+  "/school/:schoolId",
+  authenticate,
+  isSuperAdminAuth,
+  authController.toggleSchoolActive
+);
 // Export configured router to mount in main application
 module.exports = router;

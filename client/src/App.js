@@ -62,13 +62,13 @@ const App = () => {
 
         {/* Only accessible to users with role === "school_admin" */}
         <Route
-      path="/schooladmin/:id"
-      element={
-        <SchoolAdminRoute>
-          <SchoolDetailPage />
-        </SchoolAdminRoute>
-      }
-    />
+          path="/schooladmin/:id"
+          element={
+            <SchoolAdminRoute>
+              <SchoolDetailPage />
+            </SchoolAdminRoute>
+          }
+        />
       </Routes>
     </>
   );
