@@ -271,7 +271,7 @@ export default function SuperAdminPage() {
               <li key={id} className="relative">
                 <button
                   onClick={() => navigate(`/school/${id}`)}
-                  className={`w-full p-6 bg-white rounded-2xl shadow-lg hover:shadow-2xl transform transition-all duration-200 ${
+                  className={`w-full p-6 bg-white space-y-2 rounded-2xl shadow-lg hover:shadow-2xl transform transition-all duration-200 ${
                     !s.isActive ? "opacity-60 filter grayscale" : ""
                   }`}
                 >
@@ -280,6 +280,9 @@ export default function SuperAdminPage() {
                   </h2>
                   <p className="text-sm text-gray-500">
                     {id.slice(-6).toUpperCase()}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Secret Key</span> {s.secretKey}
                   </p>
                 </button>
 
