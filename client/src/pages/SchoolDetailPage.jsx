@@ -165,7 +165,11 @@ export const SchoolDetailPage = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const key =
-        detailType === "Admin" ? "users" : detailType.toLowerCase() + "s";
+        detailType === "Admin"
+          ? "users"
+          : detailType === "Class"
+          ? "classes"
+          : detailType.toLowerCase() + "s";
       const res = await fetch(`/api/${key}/${detailData._id}`, {
         method: "DELETE",
         headers: { ...(token && { Authorization: `Bearer ${token}` }) },
