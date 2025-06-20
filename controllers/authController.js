@@ -774,7 +774,7 @@ exports.renderResetPasswordForm = (req, res) => {
     <body>
       <div class="container">
         <h1>Welcome PixelGrad User Reset Your Password</h1>
-        <form method="POST" action="/auth/reset-password">
+        <form method="POST" action="/api/auth/reset-password">
           <input type="hidden" name="token" value="${rawToken}" />
           <div class="form-group">
             <label for="newPassword">New Password</label>
