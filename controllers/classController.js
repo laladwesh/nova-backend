@@ -72,7 +72,20 @@ module.exports = {
           });
         }
       }
-
+      //validate class name uniqueness
+      const existingClass = await Class.findOne({
+        name,
+        grade,
+        section,
+        year,
+        schoolId, // Ensure class name is unique within the same school
+      });
+      if (existingClass) {
+        return res.status(400).json({
+          success: false,
+          message: "A class with this name, grade, section, and year already exists in this school.",
+        });
+      }
       // Create the class document - include schoolId here
       const newClass = await Class.create({
         name,
