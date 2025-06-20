@@ -26,3 +26,41 @@ code {
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, and Opera */
 }
+
+.hide-scrollbar {
+  -ms-overflow-style: none;    /* IE, Edge */
+  scrollbar-width: none;       /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;                   /* Chrome, Safari, Opera */
+}
+
+
+/* in index.css (or globals.css) */
+.scrollbar-styled {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #888888 #f1f1f1;
+}
+
+/* WebKit browsers */
+.scrollbar-styled::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb {
+  background-color: #888888;
+  border-radius: 4px;
+  border: 2px solid #f1f1f1;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background-color: #555555;
+}
