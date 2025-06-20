@@ -4,6 +4,7 @@ const router  = express.Router();
 const { isSuperAdminAuth, authenticate } = require("../middleware/authMiddleware");
 const storyController = require("../controllers/storyController");
 const sendEmail = require("../utils/sendEmail");
+require("dotenv").config();
 // router.post(
 //   "/",
 //   authenticate,
