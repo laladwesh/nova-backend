@@ -355,9 +355,14 @@ module.exports = {
 
       const newNotification = await Notification.create(notificationData);
 
+     
+
       // Send FCM notification if not scheduled
       if (!scheduleAt) {
-        await module.exports.sendFCMNotification(newNotification);
+        await module.exports.sendFCMNotification({
+    ...newNotification.toObject(),
+    classId // ensure classId is present and correct
+  });
       }
 
       return res.status(201).json({
@@ -516,6 +521,7 @@ module.exports = {
       console.log(`========== FCM Notification ==========`);
       console.log(`Type: ${notification.type}`);
       console.log(`ID: ${notification._id}`);
+      console.log('DEBUG: notification.type:', notification.type, 'notification.classId:', notification.classId);
       
       // Extract title and body from notification message
       const body = notification.message;
@@ -634,13 +640,11 @@ module.exports = {
         
         console.log(`Found ${teacherTokens.length} FCM tokens for teacher ${notification.teacherId}`);
         
-        // Also look for topic subscribers
-        const teacherTopicTokens = await FCMToken.find({
-          topic: `teacher_${notification.teacherId.toString()}`,
-          isActive: true
-        }).select('token');
-        
-        console.log(`Found ${teacherTopicTokens.length} FCM tokens with teacher topic subscription`);
+            // Send to specific student
+        result = await fcmService.sendToUser(notification.teacherId, title, body, {
+          notificationId: notification._id.toString(),
+          type: 'teacher'
+        });
         
         // Rest of teacher notification logic...
       } else if (notification.type === "Student" && notification.studentId) {
@@ -654,13 +658,6 @@ module.exports = {
         
         console.log(`Found ${studentTokens.length} FCM tokens for student ${notification.studentId}`);
         
-        // Also look for topic subscribers
-        const studentTopicTokens = await FCMToken.find({
-          topic: `student_${notification.studentId.toString()}`,
-          isActive: true
-        }).select('token');
-        
-        console.log(`Found ${studentTopicTokens.length} FCM tokens with student topic subscription`);
         
         // Send to specific student
         result = await fcmService.sendToUser(notification.studentId, title, body, {
@@ -668,23 +665,18 @@ module.exports = {
           type: 'student'
         });
       } else if (notification.type === "Class" && notification.classId) {
+        
         console.log(`Looking for tokens with classId: ${notification.classId}`);
         
         // Get FCM tokens for users in this class
         const classTokens = await FCMToken.find({ 
-          classIds: notification.classId, 
+          classId: notification.classId, 
           isActive: true 
         }).select('token');
         
         console.log(`Found ${classTokens.length} FCM tokens with direct class membership`);
         
-        // Also look for topic subscribers
-        const classTopicTokens = await FCMToken.find({
-          topic: `class_${notification.classId.toString()}`,
-          isActive: true
-        }).select('token');
-        
-        console.log(`Found ${classTopicTokens.length} FCM tokens with class topic subscription`);
+
         
         // Send to all users in a specific class
         result = await fcmService.sendToClass(notification.classId, notification.schoolId, title, body, {
@@ -702,14 +694,7 @@ module.exports = {
         }).select('token');
         
         console.log(`Found ${parentTokens.length} FCM tokens for parent ${notification.parentId}`);
-        
-        // Also look for topic subscribers
-        const parentTopicTokens = await FCMToken.find({
-          topic: `parent_${notification.parentId.toString()}`,
-          isActive: true
-        }).select('token');
-        
-        console.log(`Found ${parentTopicTokens.length} FCM tokens with parent topic subscription`);
+
         
         // Send to specific parent
         result = await fcmService.sendToUser(notification.parentId, title, body, {

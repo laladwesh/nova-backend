@@ -202,27 +202,22 @@ const fcmService = {
       if (!isFirebaseInitialized()) {
         return { success: false, error: 'Firebase not initialized' };
       }
-      
       if (!classId) {
         return { success: false, error: 'Class ID is required' };
       }
-      
       // Find all active tokens for this class
       const classTokens = await FCMToken.find({ 
         classId, 
         isActive: true 
       }).select('token');
-      
+      console.log(`Found ${classTokens.length} tokens for class ${classId}`);
       if (classTokens.length === 0) {
         return { success: false, error: 'No active FCM tokens found for this class' };
       }
-      
       const tokens = classTokens.map(doc => doc.token);
-      
-      // Send to each token individually
+      console.log(`Sending FCM to class tokens: ${tokens.join(', ').substring(0, 50)}...`);
       let successCount = 0;
       let failureCount = 0;
-      
       for (const token of tokens) {
         try {
           const message = {
@@ -237,14 +232,13 @@ const fcmService = {
             },
             token
           };
-          
           await admin.messaging().send(message);
           successCount++;
         } catch (err) {
           failureCount++;
         }
       }
-      
+      console.log(`FCM send result: ${successCount} successful, ${failureCount} failed`);
       return { 
         success: successCount > 0,
         response: {

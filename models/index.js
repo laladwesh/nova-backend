@@ -200,6 +200,7 @@ const NotificationSchema = new Schema(
     issuedAt: { type: Date, default: Date.now },
     studentId: { type: Schema.Types.ObjectId, ref: "Student" },
     teacherId: { type: Schema.Types.ObjectId, ref: "Teacher" },
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class' },
     schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true }
   },
