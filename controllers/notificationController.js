@@ -521,7 +521,7 @@ module.exports = {
       console.log(`========== FCM Notification ==========`);
       console.log(`Type: ${notification.type}`);
       console.log(`ID: ${notification._id}`);
-      console.log('DEBUG: notification.type:', notification.type, 'notification.classId:', notification.classId);
+      
       
       // Extract title and body from notification message
       const body = notification.message;
