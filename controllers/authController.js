@@ -623,6 +623,78 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
+function renderMessagePage(message, isError = false) {
+  const title = isError ? 'Error' : 'Success';
+  const statusText = isError ? 'Oops!' : 'Success!';
+  const btnText = isError ? 'Try Again' : 'Go to Login';
+  const btnLink = isError ? 'javascript:history.back();' : '/login';
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>${title}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background-color: #f2f2f2;
+          font-family: 'Poppins', sans-serif;
+        }
+        .card {
+          background-color: #ffffff;
+          padding: 2rem;
+          border-radius: 6px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          text-align: center;
+          max-width: 360px;
+          width: 100%;
+        }
+        h1 {
+          margin-bottom: 1rem;
+          color: #333333;
+          font-size: 1.5rem;
+          font-weight: 600;
+        }
+        p {
+          margin-bottom: 1.5rem;
+          color: #555555;
+          font-size: 1rem;
+          line-height: 1.4;
+        }
+        a.btn {
+          display: inline-block;
+          padding: 0.75rem 1.5rem;
+          background-color: #1a73e8;
+          color: #ffffff;
+          border-radius: 4px;
+          text-decoration: none;
+          font-size: 0.95rem;
+          font-weight: 500;
+          transition: background-color 0.2s;
+        }
+        a.btn:hover {
+          background-color: #1558b0;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>${statusText}</h1>
+        <p>${message}</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
 // @route   POST /auth/reset-password
 // @desc    Reset a user’s password given a valid reset token
 // @access  Public
@@ -630,13 +702,11 @@ exports.resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
     if (!token || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Token and new password are required.",
-      });
+      return res
+        .status(400)
+        .send(renderMessagePage("Token and new password are required.", true));
     }
 
-    // Hash incoming token and find matching record
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
     const resetRecord = await PasswordResetToken.findOne({
       tokenHash: hashedToken,
@@ -644,42 +714,40 @@ exports.resetPassword = async (req, res) => {
     if (!resetRecord) {
       return res
         .status(400)
-        .json({ success: false, message: "Invalid or expired reset token." });
+        .send(renderMessagePage("Invalid or expired reset token.", true));
     }
 
     if (resetRecord.expiresAt < Date.now()) {
-      // Token expired
       await PasswordResetToken.findByIdAndDelete(resetRecord._id);
       return res
         .status(400)
-        .json({ success: false, message: "Reset token has expired." });
+        .send(renderMessagePage("Reset token has expired.", true));
     }
 
-    // Find user and update password
     const user = await User.findById(resetRecord.user);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
+      return res.status(404).send(renderMessagePage("User not found.", true));
     }
 
-    // Hash new password
     const salt = await bcrypt.genSalt(12);
     user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
 
-    // Delete reset token record so it cannot be reused
     await PasswordResetToken.findByIdAndDelete(resetRecord._id);
 
-    return res.status(200).json({
-      success: true,
-      message: "Password has been reset successfully.",
-    });
+    return res
+      .status(200)
+      .send(renderMessagePage("Your password has been reset successfully!"));
   } catch (err) {
     console.error("AuthController.resetPassword error:", err);
     return res
       .status(500)
-      .json({ success: false, message: "Internal server error." });
+      .send(
+        renderMessagePage(
+          "Internal server error. Please try again later.",
+          true
+        )
+      );
   }
 };
 
@@ -832,7 +900,9 @@ exports.bulkSignup = async (req, res) => {
   // 1) Verify school exists
   const schoolRecord = await School.findById(schoolId);
   if (!schoolRecord) {
-    return res.status(404).json({ success: false, message: "Invalid schoolId." });
+    return res
+      .status(404)
+      .json({ success: false, message: "Invalid schoolId." });
   }
 
   // 2) Loop through each row
@@ -849,7 +919,7 @@ exports.bulkSignup = async (req, res) => {
         address,
         studentId,
         classId,
-        parents,           // raw value from Excel
+        parents, // raw value from Excel
       } = row;
 
       // Basic validation
@@ -864,39 +934,43 @@ exports.bulkSignup = async (req, res) => {
       }
 
       // Unique email check
-      const existing = await User.findOne({ email: email.toLowerCase().trim() });
+      const existing = await User.findOne({
+        email: email.toLowerCase().trim(),
+      });
       if (existing) {
         throw new Error("Email already in use");
       }
 
       // Hash password
-      const salt   = await bcrypt.genSalt(12);
+      const salt = await bcrypt.genSalt(12);
       const hashed = await bcrypt.hash(password.trim(), salt);
 
       // Create the User
       const newUser = await User.create({
-        name:      name.trim(),
-        email:     email.toLowerCase().trim(),
-        password:  hashed,
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password: hashed,
         role,
-        schoolId:  schoolRecord._id,
-        gender:    gender?.trim(),
-        dob:       dob ? new Date(dob) : undefined,
-        phone:     phone?.trim(),
-        address:   address?.trim(),
-        ...(role === "student" && { studentId: studentId.trim(), classId })
+        schoolId: schoolRecord._id,
+        gender: gender?.trim(),
+        dob: dob ? new Date(dob) : undefined,
+        phone: phone?.trim(),
+        address: address?.trim(),
+        ...(role === "student" && { studentId: studentId.trim(), classId }),
       });
 
       // Teacher wiring
       if (role === "teacher") {
         await Teacher.create({
-          _id:       newUser._id,
+          _id: newUser._id,
           teacherId: crypto.randomBytes(4).toString("hex"),
-          name:      newUser.name,
-          email:     newUser.email,
-          schoolId:  schoolRecord._id,
+          name: newUser.name,
+          email: newUser.email,
+          schoolId: schoolRecord._id,
         });
-        await School.findByIdAndUpdate(schoolRecord._id, { $push: { teachers: newUser._id } });
+        await School.findByIdAndUpdate(schoolRecord._id, {
+          $push: { teachers: newUser._id },
+        });
       } else {
         // STUDENT wiring
 
@@ -917,16 +991,16 @@ exports.bulkSignup = async (req, res) => {
 
         // 3) Create the Student record
         const studentDoc = await Student.create({
-          _id:       newUser._id,
+          _id: newUser._id,
           studentId: studentId.trim(),
-          name:      newUser.name,
+          name: newUser.name,
           classId,
-          gender:    gender?.trim(),
-          dob:       dob ? new Date(dob) : undefined,
-          email:     newUser.email,
-          phone:     phone?.trim(),
-          address:   address?.trim(),
-          schoolId:  schoolRecord._id,
+          gender: gender?.trim(),
+          dob: dob ? new Date(dob) : undefined,
+          email: newUser.email,
+          phone: phone?.trim(),
+          address: address?.trim(),
+          schoolId: schoolRecord._id,
         });
 
         // 4) For each parent, either find-or-create User + Parent doc
@@ -936,41 +1010,44 @@ exports.bulkSignup = async (req, res) => {
             throw new Error("Each parent needs name, email, and password");
           }
           const parentEmail = p.email.toLowerCase().trim();
-          let parentUser = await User.findOne({ email: parentEmail, role: "parent" });
+          let parentUser = await User.findOne({
+            email: parentEmail,
+            role: "parent",
+          });
           let parentDoc;
 
           if (parentUser) {
             parentDoc = await Parent.findById(parentUser._id);
             if (!parentDoc) {
               parentDoc = await Parent.create({
-                _id:       parentUser._id,
-                name:      p.name.trim(),
-                email:     parentEmail,
-                phone:     p.phone?.trim(),
-                schoolId:  schoolRecord._id,
-                students:  [studentDoc._id],
+                _id: parentUser._id,
+                name: p.name.trim(),
+                email: parentEmail,
+                phone: p.phone?.trim(),
+                schoolId: schoolRecord._id,
+                students: [studentDoc._id],
               });
             } else if (!parentDoc.students.includes(studentDoc._id)) {
               parentDoc.students.push(studentDoc._id);
               await parentDoc.save();
             }
           } else {
-            const saltP       = await bcrypt.genSalt(12);
-            const hashedP     = await bcrypt.hash(p.password.trim(), saltP);
+            const saltP = await bcrypt.genSalt(12);
+            const hashedP = await bcrypt.hash(p.password.trim(), saltP);
             parentUser = await User.create({
-              name:     p.name.trim(),
-              email:    parentEmail,
+              name: p.name.trim(),
+              email: parentEmail,
               password: hashedP,
-              role:     "parent",
+              role: "parent",
               schoolId: schoolRecord._id,
             });
             parentDoc = await Parent.create({
-              _id:       parentUser._id,
-              name:      p.name.trim(),
-              email:     parentEmail,
-              phone:     p.phone?.trim(),
-              schoolId:  schoolRecord._id,
-              students:  [studentDoc._id],
+              _id: parentUser._id,
+              name: p.name.trim(),
+              email: parentEmail,
+              phone: p.phone?.trim(),
+              schoolId: schoolRecord._id,
+              students: [studentDoc._id],
             });
           }
           createdParentIds.push(parentUser._id);
@@ -980,8 +1057,8 @@ exports.bulkSignup = async (req, res) => {
         await School.findByIdAndUpdate(schoolRecord._id, {
           $addToSet: {
             students: studentDoc._id,
-            parents:  { $each: createdParentIds }
-          }
+            parents: { $each: createdParentIds },
+          },
         });
 
         // 6) Attach parents list to Student and save
@@ -989,7 +1066,9 @@ exports.bulkSignup = async (req, res) => {
         await studentDoc.save();
 
         // 7) Add student to Class
-        await Class.findByIdAndUpdate(classId, { $push: { students: studentDoc._id } });
+        await Class.findByIdAndUpdate(classId, {
+          $push: { students: studentDoc._id },
+        });
       }
 
       successCount++;
@@ -1000,8 +1079,8 @@ exports.bulkSignup = async (req, res) => {
 
   // 3) Return final report
   return res.status(200).json({
-    success:      true,
+    success: true,
     successCount,
-    failures
+    failures,
   });
 };
