@@ -18,7 +18,13 @@
  *      { message: String, audience: ['all_students'|'all_teachers'|arrayOfSpecificIds], scheduleAt?: Date }
  */
 
-const { Event, Notification, Student, Teacher } = require("../models");
+const {
+  Event,
+  Notification,
+  Student,
+  Teacher,
+  AcademicCalendar,
+} = require("../models");
 const mongoose = require("mongoose");
 
 module.exports = {
@@ -71,7 +77,19 @@ module.exports = {
         venue: venue || "",
         schoolId,
       });
-
+      const eventYear = newEvent.date.getFullYear();
+      const cal = await AcademicCalendar.findOneAndUpdate(
+        { schoolId, year: eventYear },
+        { $setOnInsert: { schoolId, year: eventYear } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      // push this event into fixedEvents, using same _id
+      cal.fixedEvents.push({
+        _id: newEvent._id,
+        name: newEvent.name,
+        date: newEvent.date,
+      });
+      await cal.save();
       return res.status(201).json({
         success: true,
         message: "Event created successfully.",
@@ -141,6 +159,23 @@ module.exports = {
           .json({ success: false, message: "Event not found." });
       }
 
+      // ── Sync update into AcademicCalendar ──
+      const eventYear = updatedEvent.date.getFullYear();
+      const cal = await AcademicCalendar.findOne({
+        schoolId: updatedEvent.schoolId,
+        year: eventYear,
+      });
+      if (cal) {
+        const idx = cal.fixedEvents.findIndex((e) =>
+          e._id.equals(updatedEvent._id)
+        );
+        if (idx !== -1) {
+          cal.fixedEvents[idx].name = updatedEvent.name;
+          cal.fixedEvents[idx].date = updatedEvent.date;
+          await cal.save();
+        }
+      }
+
       return res.status(200).json({
         success: true,
         message: "Event updated successfully.",
@@ -170,6 +205,12 @@ module.exports = {
           .status(404)
           .json({ success: false, message: "Event not found." });
       }
+      // ── Sync deletion from AcademicCalendar ──
+      const eventYear = deleted.date.getFullYear();
+      await AcademicCalendar.findOneAndUpdate(
+        { schoolId: deleted.schoolId, year: eventYear },
+        { $pull: { fixedEvents: { _id: deleted._id } } }
+      );
 
       return res.status(200).json({
         success: true,
