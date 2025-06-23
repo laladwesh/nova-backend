@@ -24,12 +24,30 @@ const mongoose = require("mongoose");
 
 module.exports = {
   // GET /calendar
+  // GET /calendar?schoolId=<id>&year=<year>
   listCalendarItems: async (req, res) => {
     try {
-      const { year } = req.query;
+      const { schoolId, year } = req.query;
       const filter = {};
+
+      // filter by schoolId if provided
+      if (schoolId) {
+        if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid schoolId." });
+        }
+        filter.schoolId = schoolId;
+      }
+      // filter by year if provided
       if (year) {
-        filter.year = parseInt(year, 10);
+        const y = parseInt(year, 10);
+        if (isNaN(y)) {
+          return res
+            .status(400)
+            .json({ success: false, message: "Invalid year." });
+        }
+        filter.year = y;
       }
       const calendars = await AcademicCalendar.find(filter).sort({ year: -1 });
       return res.status(200).json({
@@ -55,7 +73,7 @@ module.exports = {
           message: "year, type, name, date, and schoolId are required.",
         });
       }
-      
+
       // Validate schoolId format
       if (!mongoose.Types.ObjectId.isValid(schoolId)) {
         return res.status(400).json({
@@ -63,7 +81,7 @@ module.exports = {
           message: "Invalid schoolId format.",
         });
       }
-      
+
       const parsedYear = parseInt(year, 10);
       const calendar = await AcademicCalendar.findOneAndUpdate(
         { year: parsedYear, schoolId },
