@@ -19,10 +19,10 @@ const mongoose = require("mongoose");
 const { Resource, Teacher, Class } = require("../models");
 
 module.exports = {
-  // GET /resources?classId=&subject=
+  // GET /resources/ClassId
   listResources: async (req, res) => {
     try {
-      const { classId, subject } = req.query;
+      const { classId } = req.params;
       const filter = {};
 
       if (classId) {
@@ -32,9 +32,6 @@ module.exports = {
             .json({ success: false, message: "Invalid classId." });
         }
         filter.classId = classId;
-      }
-      if (subject) {
-        filter.subject = subject;
       }
 
       const resources = await Resource.find(filter)
@@ -87,7 +84,11 @@ module.exports = {
   createResource: async (req, res) => {
     try {
       const { classId, subject, title, description, fileUrl } = req.body;
-      const uploadedBy = req.user.userId;
+      const uploadedBy = req.user._id;
+      const userRole = req.user.role;
+
+      console.log("Creating resource - User ID:", uploadedBy);
+      console.log("User role:", userRole);
 
       // Only teachers or admins may upload resources
       const uploaderRole = req.user.role;
@@ -132,6 +133,7 @@ module.exports = {
         uploadedBy,
         classId,
         subject,
+        schoolId: req.user.schoolId, 
         title,
         description: description || "",
         fileUrl,

@@ -15,7 +15,7 @@ const formController = require("../controllers/formController");
  */
 function canViewForms(req, res, next) {
   const role = req.user.role;
-  if (role === "student" || role === "teacher" || role === "school_admin") {
+  if (role === "student" || role === "teacher" || role === "school_admin"|| role==="parent") {
     return next();
   }
   return res
