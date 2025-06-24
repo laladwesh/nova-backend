@@ -362,4 +362,23 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
+  getAssignmentsByClass: async (req, res) => {
+    try {
+      const { classId } = req.params;
+      // 1) Validate classId
+      if (!mongoose.Types.ObjectId.isValid(classId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid classId." });
+      }
+      // 2) Fetch all assignments for that class
+      const assignments = await Assignment.find({ classId }).lean();
+      return res.status(200).json({ success: true, data: assignments });
+    } catch (err) {
+      console.error("assignmentController.getAssignmentsByClass error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  }
 };

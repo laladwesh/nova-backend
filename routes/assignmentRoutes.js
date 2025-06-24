@@ -103,4 +103,14 @@ router.put(
   assignmentController.provideFeedback
 );
 
+/**
+ * 8. GET '/class/:classId' – fetch all assignments for a given class
+ *    – Any authenticated user (students, parents, teachers, admin) may view.
+ */
+router.get(
+  "/class/:classId",
+  authenticate,
+  assignmentController.getAssignmentsByClass
+);
+
 module.exports = router;
