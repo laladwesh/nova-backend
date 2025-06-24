@@ -240,18 +240,33 @@ const FixedEventSchema = new Schema(
   { _id: false }
 );
 
+
 const AcademicCalendarSchema = new Schema(
   {
-    year: { type: Number, required: true, unique: true },
-    holidays: { type: [HolidaySchema], default: [] },
-    examSchedule: { type: [ExamSchema], default: [] },
-    fixedEvents: { type: [FixedEventSchema], default: [] },
-    schoolId: { type: Schema.Types.ObjectId, ref: "School", required: true },
+    year: {
+      type: Number,
+      required: true  // removed unique: true
+    },
+    schoolId: {
+      type: Schema.Types.ObjectId,
+      ref: "School",
+      required: true
+    },
+    holidays:     { type: [HolidaySchema],  default: [] },
+    examSchedule: { type: [ExamSchema],     default: [] },
+    fixedEvents:  { type: [FixedEventSchema], default: [] },
   },
   { timestamps: true }
 );
 
-const AcademicCalendar = model("AcademicCalendar", AcademicCalendarSchema);
+// enforce uniqueness per (schoolId, year) instead of global year
+AcademicCalendarSchema.index(
+  { schoolId: 1, year: 1 },
+  { unique: true }
+);
+
+module.exports = model("AcademicCalendar", AcademicCalendarSchema);
+
 
 // ────────────────────────────────────────────────────────────────────────────────
 // 10. FEE STRUCTURE & PAYMENT
