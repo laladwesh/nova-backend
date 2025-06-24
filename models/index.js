@@ -265,7 +265,7 @@ AcademicCalendarSchema.index(
   { unique: true }
 );
 
-module.exports = model("AcademicCalendar", AcademicCalendarSchema);
+const AcademicCalendar = model("AcademicCalendar", AcademicCalendarSchema);
 
 
 // ────────────────────────────────────────────────────────────────────────────────
