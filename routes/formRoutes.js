@@ -86,5 +86,10 @@ router.put(
   canUpdateStatus,
   formController.updateFormStatus
 );
-
+router.get(
+  "/school/:schoolId",
+  authenticate,
+  canUpdateStatus,
+  formController.getFormsBySchool
+);
 module.exports = router;

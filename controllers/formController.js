@@ -227,4 +227,21 @@ module.exports = {
         .json({ success: false, message: "Internal server error." });
     }
   },
+  getFormsBySchool: async (req, res) => {
+    try {
+      const { schoolId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid schoolId." });
+      }
+      const forms = await Form.find({ schoolId }).lean();
+      return res.status(200).json({ success: true, data: forms });
+    } catch (err) {
+      console.error("formController.getFormsBySchool error:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  },
 };
