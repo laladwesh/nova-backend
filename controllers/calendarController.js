@@ -65,7 +65,7 @@ module.exports = {
   // POST /calendar
   createCalendarItem: async (req, res) => {
     try {
-      const { year, type, name, date, time, subjects, schoolId } = req.body;
+      const { year, type, name, date, time, schoolId } = req.body;
 
       if (!year || !type || !name || !date || !schoolId) {
         return res.status(400).json({
@@ -91,14 +91,13 @@ module.exports = {
 
       const itemData = { name, date: new Date(date) };
       if (type === "exam") {
-        if (!time || !Array.isArray(subjects) || subjects.length === 0) {
+        if (!time) {
           return res.status(400).json({
             success: false,
-            message: "Exam entries require time and subjects array.",
+            message: "Exam entries require a time.",
           });
         }
         itemData.time = time;
-        itemData.subjects = subjects;
         calendar.examSchedule.push(itemData);
       } else if (type === "holiday") {
         calendar.holidays.push(itemData);
@@ -129,7 +128,7 @@ module.exports = {
   updateCalendarItem: async (req, res) => {
     try {
       const { calendarId } = req.params;
-      const { type, itemId, name, date, time, subjects } = req.body;
+      const { type, itemId, name, date, time } = req.body;
 
       if (!mongoose.Types.ObjectId.isValid(calendarId)) {
         return res
@@ -178,7 +177,6 @@ module.exports = {
       if (date) subArray[itemIndex].date = new Date(date);
       if (type === "exam") {
         if (time !== undefined) subArray[itemIndex].time = time;
-        if (Array.isArray(subjects)) subArray[itemIndex].subjects = subjects;
       }
 
       await calendar.save();

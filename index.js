@@ -79,18 +79,6 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 
-
-// ─── SERVE REACT IN PRODUCTION ──────────────────────────────────────────────
-// if (process.env.NODE_ENV === 'production') {
-//   const clientBuildPath = path.join(__dirname, 'client/build');
-//   app.use(express.static(clientBuildPath));
-
-//   // Return index.html for all non-API GET requests
-//   app.get('*', (req, res) => {
-//     res.sendFile(path.join(clientBuildPath, 'index.html'));
-//   });
-// }
-
 // ─── START SERVER ───────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 const startServer = async () => {

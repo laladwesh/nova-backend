@@ -227,7 +227,6 @@ const ExamSchema = new Schema(
     name: { type: String, required: true },
     date: { type: Date, required: true },
     time: { type: String },
-    subjects: [{ type: String, required: true }],
   },
   { _id: false }
 );
